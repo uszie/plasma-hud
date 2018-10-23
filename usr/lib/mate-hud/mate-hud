@@ -254,6 +254,16 @@ def try_appmenu_interface(window_id):
         logging.debug(e)
         return False
 
+    return try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path)
+
+
+"""
+  try_dbusmenu_interface
+"""
+def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
+    # --- Get Appmenu Registrar DBus interface
+    session_bus = dbus.SessionBus()
+
     # --- Access dbusmenu items
     try:
         dbusmenu_object = session_bus.get_object(dbusmenu_bus, dbusmenu_object_path)
@@ -458,6 +468,8 @@ def hud(widget, keystr, user_data):
     gtk_app_object_path = get_prop_str('_GTK_APPLICATION_OBJECT_PATH')
     gtk_win_object_path = get_prop_str('_GTK_WINDOW_OBJECT_PATH')
     gtk_unity_object_path = get_prop_str('_UNITY_OBJECT_PATH')
+    kde_appmenu_service_name = get_prop_str('_KDE_NET_WM_APPMENU_SERVICE_NAME')
+    kde_appmenu_object_path = get_prop_str('_KDE_NET_WM_APPMENU_OBJECT_PATH')
 
     logging.debug('Window id is : %s', window_id)
     logging.debug('_GTK_UNIQUE_BUS_NAME: %s', gtk_bus_name)
@@ -465,10 +477,16 @@ def hud(widget, keystr, user_data):
     logging.debug('_GTK_APPLICATION_OBJECT_PATH: %s', gtk_app_object_path)
     logging.debug('_GTK_WINDOW_OBJECT_PATH: %s', gtk_win_object_path)
     logging.debug('_UNITY_OBJECT_PATH: %s', gtk_unity_object_path)
+    logging.debug('_KDE_NET_WM_APPMENU_SERVICE_NAME: %s', kde_appmenu_service_name)
+    logging.debug('_KDE_NET_WM_APPMENU_OBJECT_PATH: %s', kde_appmenu_object_path)
 
-    logging.debug('Trying AppMenu')
-    appmenu_success = try_appmenu_interface(int(window_id, 16))
-    terminate_appmenu_registrar()
+    if kde_appmenu_service_name and kde_appmenu_object_path:
+        logging.debug('Trying KDE AppMenu interface')
+        appmenu_success = try_dbusmenu_interface(kde_appmenu_service_name, kde_appmenu_object_path)
+    else:
+        logging.debug('Trying AppMenu')
+        appmenu_success = try_appmenu_interface(int(window_id, 16))
+        terminate_appmenu_registrar()
 
     if not appmenu_success and gtk_menubar_object_path:
         logging.debug('Appmenu found nothing.')
