@@ -480,9 +480,13 @@ def hud(widget, keystr, user_data):
     logging.debug('_KDE_NET_WM_APPMENU_SERVICE_NAME: %s', kde_appmenu_service_name)
     logging.debug('_KDE_NET_WM_APPMENU_OBJECT_PATH: %s', kde_appmenu_object_path)
 
-    if kde_appmenu_service_name and kde_appmenu_object_path:
-        logging.debug('Trying KDE AppMenu interface')
-        appmenu_success = try_dbusmenu_interface(kde_appmenu_service_name, kde_appmenu_object_path)
+    if 'KDE' in os.environ['XDG_CURRENT_DESKTOP']:
+        if kde_appmenu_service_name and kde_appmenu_object_path:
+            logging.debug('Trying KDE AppMenu interface')
+            appmenu_success = try_dbusmenu_interface(kde_appmenu_service_name, kde_appmenu_object_path)
+        else:
+            logging.debug('KDE AppMenu interface not found, skipping')
+            appmenu_success = False
     else:
         logging.debug('Trying AppMenu')
         appmenu_success = try_appmenu_interface(int(window_id, 16))
