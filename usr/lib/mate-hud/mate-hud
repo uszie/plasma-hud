@@ -443,15 +443,20 @@ def hud(widget, keystr, user_data):
     ewmh = EWMH()
     win = ewmh.getActiveWindow()
     window_id = hex(ewmh._getProperty('_NET_ACTIVE_WINDOW')[0])
-    gtk_bus_name = ewmh._getProperty('_GTK_UNIQUE_BUS_NAME', win)
-    gtk_menubar_object_path = ewmh._getProperty('_GTK_MENUBAR_OBJECT_PATH', win)
-    gtk_app_object_path = ewmh._getProperty('_GTK_APPLICATION_OBJECT_PATH', win)
-    gtk_win_object_path = ewmh._getProperty('_GTK_WINDOW_OBJECT_PATH', win)
-    gtk_unity_object_path = ewmh._getProperty('_UNITY_OBJECT_PATH', win)
 
-    gtk_bus_name, gtk_menubar_object_path, gtk_app_object_path, gtk_win_object_path, gtk_unity_object_path = \
-        [i.decode('utf8') if isinstance(i, bytes) \
-        else i for i in [gtk_bus_name, gtk_menubar_object_path, gtk_app_object_path, gtk_win_object_path, gtk_unity_object_path]]
+    def get_prop_str(propKey):
+        value = ewmh._getProperty(propKey, win)
+        # print('get_prop_str', propKey, value)
+        if isinstance(value, bytes):
+            return value.decode('utf8')
+        else:
+            return value
+
+    gtk_bus_name = get_prop_str('_GTK_UNIQUE_BUS_NAME')
+    gtk_menubar_object_path = get_prop_str('_GTK_MENUBAR_OBJECT_PATH')
+    gtk_app_object_path = get_prop_str('_GTK_APPLICATION_OBJECT_PATH')
+    gtk_win_object_path = get_prop_str('_GTK_WINDOW_OBJECT_PATH')
+    gtk_unity_object_path = get_prop_str('_UNITY_OBJECT_PATH')
 
     logging.debug('Window id is : %s', window_id)
     logging.debug('_GTK_UNIQUE_BUS_NAME: %s', gtk_bus_name)
