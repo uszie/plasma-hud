@@ -249,8 +249,9 @@ def try_appmenu_interface(window_id):
     try:
         dbusmenu_bus, dbusmenu_object_path = appmenu_registrar_object_iface.GetMenuForWindow(window_id)
         terminate_appmenu_registrar()
-    except dbus.exceptions.DBusException:
+    except dbus.exceptions.DBusException as e:
         logging.info('Unable to get dbusmenu object path.')
+        logging.debug(e)
         return False
 
     # --- Access dbusmenu items
