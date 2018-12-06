@@ -154,10 +154,14 @@ def get_color(style_context, preferred_color, fallback_color):
         color = rgba_to_hex(style_context.lookup_color(fallback_color)[1])
     return color
 
+rofi_process = None
+
 def get_menu(menuKeys):
     """
     Generate menu of available menu items.
     """
+    global rofi_process
+
     if not menuKeys:
         return ''
 
@@ -207,7 +211,7 @@ def get_menu(menuKeys):
     height_dpi = get_dpi(screen.height(), screen.height_mm())
     dpi = scale * (width_dpi + height_dpi) / 2
 
-    menu_cmd = subprocess.Popen(['rofi', '-dmenu', '-i',
+    rofi_process = subprocess.Popen(['rofi', '-dmenu', '-i',
                                  '-location', '1',
                                  '-width', '100', '-p', 'HUD',
                                  '-lines', '10', '-font', font_name,
@@ -226,9 +230,9 @@ def get_menu(menuKeys):
                                  '-color-active', bg_color +", " + fg_color + ", " + bg_color + ", " + info_bg_color + ", " + info_fg_color,
                                  '-color-urgent', bg_color +", " + fg_color + ", " + bg_color + ", " + error_bg_color + ", " + error_fg_color],
                                  stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-    menu_cmd.stdin.write(menu_string.encode('utf-8'))
-    menu_result = menu_cmd.communicate()[0].decode('utf8').rstrip()
-    menu_cmd.stdin.close()
+    rofi_process.stdin.write(menu_string.encode('utf-8'))
+    menu_result = rofi_process.communicate()[0].decode('utf8').rstrip()
+    rofi_process.stdin.close()
 
     return menu_result
 
