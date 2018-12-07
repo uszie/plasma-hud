@@ -58,6 +58,13 @@ export GTK_MODULES
 export UBUNTU_MENUPROXY=1
 ```
 
+* Run the following commands to bind the `Alt` keys.
+
+```
+kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt "com.github.zren.PlasmaHUD,/PlasmaHUD,com.github.zren.PlasmaHUD,toggleHUD"
+qdbus org.kde.KWin /KWin reconfigure
+```
+
 ## Dependencies
 
   * `appmenu-qt`
