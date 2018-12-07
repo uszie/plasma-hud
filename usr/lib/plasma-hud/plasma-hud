@@ -494,7 +494,7 @@ class PlasmaHUD(dbus.service.Object):
 # qdbus org.kde.KWin /KWin reconfigure
 
 if __name__ == "__main__":
-    setproctitle.setproctitle('mate-hud')
+    setproctitle.setproctitle('plasma-hud')
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
     DBusGMainLoop(set_as_default=True)
