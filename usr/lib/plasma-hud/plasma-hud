@@ -3,6 +3,7 @@
 import gi
 gi.require_version("Gtk", "3.0")
 
+import configparser
 import dbus
 import dbus.service
 import logging
@@ -127,6 +128,51 @@ def get_color(style_context, preferred_color, fallback_color):
         color = rgba_to_hex(style_context.lookup_color(fallback_color)[1])
     return color
 
+
+# KDE rc files differences:
+#     Keys are cAsE sensitive
+#     No spaces around the =
+#     [Sections can have spaces and : colons]
+# Also (NOT FIXED):
+#     Can have [Sub][Sections]
+class KdeConfig(configparser.ConfigParser):
+    def __init__(self, filename):
+        super().__init__()
+
+        # Keep case sensitive keys
+        # http://stackoverflow.com/questions/19359556/configparser-reads-capital-keys-and-make-them-lower-case
+        self.optionxform = str
+
+        self.filename = filename
+        self.read(self.filename)
+
+    def set(self, section, option, value):
+        if not self.has_section(section):
+            self.add_section(section)
+        super().set(section, option, str(value))
+
+    def setProp(self, key, value):
+        section, option = key.split('.', 1)
+        return self.set(section, option, value)
+
+    def getProp(self, key):
+        section, option = key.split('.', 1)
+        return self.get(section, option)
+
+    def default(self, section, option, value):
+        if not self.has_option(section, option):
+            self.set(section, option, value)
+
+    def save(self): 
+        with open(self.filename, 'w') as fp:
+            self.write(fp, space_around_delimiters=False)
+
+class PlasmaHudConfig(KdeConfig):
+    def __init__(self):
+        super().__init__(os.path.abspath(os.path.expanduser('~/.config/plasmahudrc')))
+
+# plasmahudrc = PlasmaHudConfig()
+
 rofi_process = None
 
 def get_menu(menuKeys):
@@ -164,6 +210,13 @@ def get_menu(menuKeys):
     info_bg_color = rgba_to_hex(style_context.lookup_color('info_bg_color')[1])
     info_fg_color = rgba_to_hex(style_context.lookup_color('info_fg_color')[1])
     text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
+
+    bg_color = '#111111'
+    fg_color = '#eeeff0'
+    borders = '#000000'
+    selected_bg_color = '#062d25'
+
+    logging.debug('selected_bg_color: %s', str(selected_bg_color))
 
     # Calculate display DPI value
     screen = window.get_screen()
@@ -314,7 +367,7 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
         terminate_appmenu_registrar()
     except dbus.exceptions.DBusException:
         logging.info('Unable to connect with com.gtk.Menus.')
-        return
+        return False
 
     # Here's the deal: The idea is to reduce the number of calls to the proxy and keep it as low as possible
     # because the proxy is a potential bottleneck
@@ -396,6 +449,10 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
     gtk_menu_menus_iface.End(usedLayers)
 
     menuKeys = sorted(gtk_menubar_action_dict.keys())
+    if menuKeys is not None and len(menuKeys) == 0:
+        logging.debug('gtk menubar has an empty menu')
+        return False
+
     menu_result = get_menu(menuKeys)
 
     # --- Use menu result
@@ -419,6 +476,7 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
                 action_iface.Activate(action, target, not_use_platform_data)
             except Exception as e:
                 logging.debug('action_path: %s', str(action_path))
+    return True
 
 def hud():
     logging.debug("hud()")
@@ -453,6 +511,7 @@ def hud():
     logging.debug('_KDE_NET_WM_APPMENU_SERVICE_NAME: %s', kde_appmenu_service_name)
     logging.debug('_KDE_NET_WM_APPMENU_OBJECT_PATH: %s', kde_appmenu_object_path)
 
+    appmenu_success = False
     if gtk_menubar_object_path:
         # Many apps do not respect menu action groups, such as
         # LibreOffice and gnome-mpv, so we have to include all action
@@ -463,12 +522,15 @@ def hud():
                                    gtk_menubar_object_path,
                                    gtk_app_object_path,
                                    gtk_unity_object_path]))
-        try_gtk_interface(gtk_bus_name, gtk_menubar_object_path, gtk_actions_paths_list)
-    elif kde_appmenu_service_name and kde_appmenu_object_path:
-        logging.debug('Trying KDE AppMenu interface')
-        appmenu_success = try_dbusmenu_interface(kde_appmenu_service_name, kde_appmenu_object_path)
-    else:
-        logging.debug('_GTK_MENUBAR_OBJECT_PATH in None, giving up.')
+        appmenu_success = try_gtk_interface(gtk_bus_name, gtk_menubar_object_path, gtk_actions_paths_list)
+    
+    if not appmenu_success:
+        if kde_appmenu_service_name and kde_appmenu_object_path:
+            logging.debug('Trying KDE AppMenu interface')
+            appmenu_success = try_dbusmenu_interface(kde_appmenu_service_name, kde_appmenu_object_path)
+    
+    if not appmenu_success:
+        logging.debug('Giving up')
 
 def openHUD():
     threading.Thread(target=hud).start()
