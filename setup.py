@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+# Copyright (C) 2018 by Chris Holland <zrenfire@gmail.com>
 # Copyright (C) 2016 by Martin Wimpress <code@flexion.org>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -41,8 +42,7 @@ def datafilelist(installbase, sourcebase):
 
 data_files = [
     ('{prefix}/lib/mate-hud/'.format(prefix=sys.prefix), ['usr/lib/mate-hud/mate-hud']),
-    ('{prefix}/share/mate/autostart/'.format(prefix=sys.prefix), ['usr/share/mate/autostart/mate-hud.desktop']),
-    ('{prefix}/share/glib-2.0/schemas/'.format(prefix=sys.prefix), ['usr/share/glib-2.0/schemas/org.mate.hud.gschema.xml']),
+    ('/etc/xdg/autostart/', ['etc/xdg/autostart/plasma-hud.desktop']),
 ]
 
 cmdclass = {
@@ -51,12 +51,12 @@ cmdclass = {
 }
 
 setup(
-    name = "mate-hud",
+    name = "plasma-hud",
     version = __VERSION__,
     description = "Run menubar commands, much like the Unity 7 HUD",
     license = 'GPLv2+',
-    author = 'Martin Wimpress',
-    url = 'https://bitbucket.org/ubuntu-mate/mate-hud/',
+    author = 'Chris Holland',
+    url = 'https://github.com/Zren/plasma-hud/',
     #package_dir = {'': '.'},
     data_files = data_files,
     install_requires = ['setuptools'],
