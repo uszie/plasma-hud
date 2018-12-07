@@ -4,6 +4,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 
 import dbus
+import dbus.service
 import logging
 import os
 import psutil
@@ -71,34 +72,6 @@ def format_path(path):
     result = result.replace('Label Empty > ', '')
     result = result.replace('_', '')
     return result.replace('>', u'\u0020\u0020\u00BB\u0020\u0020')
-
-def get_bool(schema, path, key):
-    if path:
-        settings = Gio.Settings.new_with_path(schema, path)
-    else:
-        settings = Gio.Settings.new(schema)
-    return settings.get_boolean(key)
-
-def get_string(schema, path, key):
-    if path:
-        settings = Gio.Settings.new_with_path(schema, path)
-    else:
-        settings = Gio.Settings.new(schema)
-    return settings.get_string(key)
-
-def get_number(schema, path, key):
-    if path:
-        settings = Gio.Settings.new_with_path(schema, path)
-    else:
-        settings = Gio.Settings.new(schema)
-    return settings.get_int(key)
-
-def get_list(schema, path, key):
-    if path:
-        settings = Gio.Settings.new_with_path(schema, path)
-    else:
-        settings = Gio.Settings.new(schema)
-    return settings.get_strv(key)
 
 def process_running(name):
     uid = os.getuid()
@@ -170,7 +143,7 @@ def get_menu(menuKeys):
         menu_string += '\n' + menu_item
 
     # Get the currently active font.
-    font_name = get_string('org.mate.interface', None, 'font-name')
+    font_name = 'Sans 10'
 
     # Get some colors from the currently selected theme.
     window = Gtk.Window()
@@ -192,11 +165,6 @@ def get_menu(menuKeys):
     info_fg_color = rgba_to_hex(style_context.lookup_color('info_fg_color')[1])
     text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
 
-    # Allow closing the HUD with the same modifier key that opens it
-    shortcut = get_shortcut()
-    keyval, modifiers = Gtk.accelerator_parse(shortcut)
-    shortcut = '' if modifiers else ',' + shortcut
-
     # Calculate display DPI value
     screen = window.get_screen()
     scale = window.get_scale_factor()
@@ -211,6 +179,7 @@ def get_menu(menuKeys):
     height_dpi = get_dpi(screen.height(), screen.height_mm())
     dpi = scale * (width_dpi + height_dpi) / 2
 
+    logging.debug("get_menu.rofi_process:  %s", rofi_process)
     rofi_process = subprocess.Popen(['rofi', '-dmenu', '-i',
                                  '-location', '1',
                                  '-width', '100', '-p', 'HUD',
@@ -221,7 +190,7 @@ def get_menu(menuKeys):
                                  '-click-to-exit',
                                  '-levenshtein-sort',
                                  '-line-padding', '2',
-                                 '-kb-cancel', 'Escape' + shortcut,
+                                 '-kb-cancel', 'Escape',
                                  '-sync', # withhold display until menu entries are ready
                                  '-monitor', '-2', # show in the current application
                                  '-color-enabled',
@@ -451,8 +420,8 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
             except Exception as e:
                 logging.debug('action_path: %s', str(action_path))
 
-def hud(widget, keystr, user_data):
-    logging.debug("Handling %s", str(user_data))
+def hud():
+    logging.debug("hud()")
 
     # Get Window properties and GTK MenuModel Bus name
     ewmh = EWMH()
@@ -502,249 +471,38 @@ def hud(widget, keystr, user_data):
     else:
         logging.debug('_GTK_MENUBAR_OBJECT_PATH in None, giving up.')
 
-class GlobalKeyBinding(GObject.GObject, threading.Thread):
-    __gsignals__ = {
-        'activate': (GObject.SignalFlags.RUN_LAST, None, ()),
-    }
+def openHUD():
+    threading.Thread(target=hud).start()
 
-    def __init__(self):
-        GObject.GObject.__init__(self)
-        threading.Thread.__init__(self)
-        self.setDaemon(True)
+class PlasmaHUD(dbus.service.Object):
+    def __init__(self, conn, object_path='/PlasmaHUD'):
+        dbus.service.Object.__init__(self, conn, object_path)
 
-        self.display = display.Display()
-        self.screen = self.display.screen()
-        self.window = self.screen.root
-        self.keymap = Gdk.Keymap().get_default()
-        self.keycodes = self.get_keycodes()
-        self.ignored_masks = self.get_mask_combinations(X.LockMask | X.Mod2Mask | X.Mod5Mask)
-        self.map_modifiers()
-        self.tap_timeout = get_number('org.mate.hud', None, 'tap-timeout')
-
-    def get_mask_combinations(self, mask):
-        return [x for x in range(mask+1) if not (x & ~mask)]
-
-    # Determine valid keycodes that can operate bindings within a window
-    def get_keycodes(self):
-        keycodes = []
-
-        # White-list shortcuts used by other MATE programs
-        # <Alt>Return opens up file properties
-        # <Alt>Up|Left|Right|Home are navigation shortcuts in Caja
-        # <Alt>BackSpace is a common shortcut in text editors
-        whitelist = ['Return', 'Up', 'Down', 'Left', 'Right', 'Home', 'BackSpace']
-        for key in whitelist:
-            sym = Gtk.accelerator_parse(key).accelerator_key
-            code = self.display.keysym_to_keycode(sym)
-            keycodes.append(code)
-
-        # Allow replaying supported keycodes
-        for sym, codes in self.display._keymap_syms.items():
-            keycode = self.display.keysym_to_keycode(sym)
-            # Valid codes have keysyms from 8 to 255, inclusive
-            if sym >= 8 and sym <= 255 and keycode not in keycodes:
-                keycodes.append(keycode)
-
-        keycodes.sort()
-        return keycodes
-
-    def map_modifiers(self):
-        gdk_modifiers = (Gdk.ModifierType.CONTROL_MASK, Gdk.ModifierType.SHIFT_MASK, Gdk.ModifierType.MOD1_MASK,
-                         Gdk.ModifierType.MOD2_MASK, Gdk.ModifierType.MOD3_MASK, Gdk.ModifierType.MOD4_MASK, Gdk.ModifierType.MOD5_MASK,
-                         Gdk.ModifierType.SUPER_MASK, Gdk.ModifierType.HYPER_MASK)
-        self.known_modifiers_mask = 0
-        for modifier in gdk_modifiers:
-            if "Mod" not in Gtk.accelerator_name(0, modifier) or "Mod4" in Gtk.accelerator_name(0, modifier):
-                self.known_modifiers_mask |= modifier
-
-    def idle(self):
-        self.emit("activate")
-        return False
-
-    def activate(self):
-        GLib.idle_add(self.run)
-
-    def grab(self, shortcut):
-        accelerator = shortcut.replace("<Super>", "<Mod4>")
-        keyval, modifiers = Gtk.accelerator_parse(accelerator)
-        if not accelerator or (not keyval and not modifiers):
-            self.keycode = None
-            self.modifiers = None
-            return False
-
-        self.keycode = self.keymap.get_entries_for_keyval(keyval).keys[0].keycode
-        self.modifiers = int(modifiers)
-
-        # Request to receive key press/release reports from other windows that may not be using modifiers
-        catch = error.CatchError(error.BadWindow)
-        if self.modifiers:
-            self.window.change_attributes(onerror=catch, event_mask=X.KeyPressMask|X.KeyReleaseMask)
+    @dbus.service.method('com.github.zren.PlasmaHUD')
+    def toggleHUD(self):
+        global rofi_process
+        logging.debug("toggleHUD.rofi_process: %s", rofi_process)
+        if rofi_process and rofi_process.poll() is None:
+            logging.debug("toggleHUD.rofi_process.terminate")
+            rofi_process.terminate()
         else:
-            self.window.change_attributes(onerror=catch, event_mask=X.NoEventMask)
-        if catch.get_error():
-            return False
+            logging.debug("toggleHUD.openHUD")
+            openHUD()
 
-        catch = error.CatchError(error.BadAccess)
-        for ignored_mask in self.ignored_masks:
-            mod = self.modifiers | ignored_mask
-            self.window.grab_key(self.keycode, mod, True, X.GrabModeAsync, X.GrabModeSync, onerror=catch)
-        self.display.flush()
-        if catch.get_error():
-            return False
 
-        catch = error.CatchError(error.BadCursor)
-        if not self.modifiers:
-           # We grab Alt+click so that we can forward it to the window manager and allow Alt+click bindings (window move, resize, etc.)
-           self.window.grab_button(X.AnyButton, X.Mod1Mask, True, X.ButtonPressMask, X.GrabModeSync, X.GrabModeAsync, X.NONE, X.NONE)
-        self.display.flush()
-        if catch.get_error():
-            return False
-
-        return True
-
-    # Get which window manager we're currently using (Marco, Compiz, Metacity, etc...)
-    def get_wm(self):
-        name = ''
-        wm_check = self.display.get_atom('_NET_SUPPORTING_WM_CHECK')
-        win_id = self.window.get_full_property(wm_check, X.AnyPropertyType)
-        if win_id:
-            w = self.display.create_resource_object("window", win_id.value[0])
-            wm_name = self.display.get_atom('_NET_WM_NAME')
-            prop = w.get_full_property(wm_name, X.AnyPropertyType)
-            if prop:
-                name = prop.value
-        return name.lower()
-
-    def run(self):
-        self.running = True
-        possible_tap = False
-        tap_start = 0
-        while self.running:
-            event = self.display.next_event()
-
-            if self.modifiers:
-                # Use simpler logic when using traditional combined keybindings
-                modifiers = event.state & self.known_modifiers_mask
-                if event.type == X.KeyPress and event.detail == self.keycode and modifiers == self.modifiers:
-                    GLib.idle_add(self.idle)
-                self.display.allow_events(X.SyncKeyboard, X.CurrentTime)
-
-            else:
-                try:
-                    # Cancel waiting for the key release if it's not a tap
-                    if self.tap_timeout and event.time - tap_start > self.tap_timeout:
-                       possible_tap = False
-
-                    # KeyPress, determine if it's the begining of the tap
-                    if event.type == X.KeyPress and event.detail == self.keycode and not possible_tap:
-                        tap_start = event.time
-                        modifiers = event.state & self.known_modifiers_mask
-                        if modifiers == self.modifiers:
-                            possible_tap = True
-                        self.display.allow_events(X.SyncKeyboard, X.CurrentTime)
-
-                    # KeyRelease - determine if it's the end of the tap and activate the HUD
-                    elif event.type == X.KeyRelease and event.detail == self.keycode and possible_tap:
-                        GLib.idle_add(self.idle)
-                        possible_tap = False
-                        self.display.allow_events(X.AsyncKeyboard, X.CurrentTime)
-
-                    # Modifiers are often used with mouse events - don't let the system swallow those
-                    elif event.type == X.ButtonPress:
-                        self.display.allow_events(X.ReplayPointer, X.CurrentTime)
-                        # Compiz would rather not have the event sent to it and just read it from the replayed queue
-                        wm = self.get_wm()
-                        if wm != b'compiz':
-                            self.display.ungrab_keyboard(X.CurrentTime)
-                            self.display.ungrab_pointer(X.CurrentTime)
-                            query_pointer = self.window.query_pointer()
-                            self.display.send_event(query_pointer.child, event, X.ButtonPressMask, True)
-                        possible_tap = False
-
-                    # If the user presses another key in between the KeyPress and the KeyRelease, they
-                    # meant to use a different shortcut - determine what to do based on the keycode
-                    else:
-                        # Replay event if the display supports it as a window-based binding
-                        # otherwise send it asynchronously to let the top-level window grab it
-                        if event.detail in self.keycodes:
-                            self.display.allow_events(X.ReplayKeyboard, X.CurrentTime)
-                        else:
-                            self.display.allow_events(X.AsyncKeyboard, X.CurrentTime)
-
-                        self.display.ungrab_keyboard(X.CurrentTime)
-                        self.display.send_event(event.window, event, X.KeyPressMask | X.KeyReleaseMask, True)
-                        possible_tap = False
-
-                except Exception as e:
-                    logging.error('Error processing keybinding: %s' % e)
-                    # Allow keybinding to go through and reset tap state
-                    self.display.allow_events(X.AsyncKeyboard, X.CurrentTime)
-                    possible_tap = False
-                    continue
-
-    def stop(self):
-        self.running = False
-        self.ungrab()
-        self.display.close()
-
-    def ungrab(self):
-        if self.keycode:
-            self.window.ungrab_key(self.keycode, X.AnyModifier, self.window)
-
-    def rebind(self, shortcut):
-        self.ungrab()
-        if shortcut != "":
-            self.grab(shortcut)
-
-def get_shortcut():
-    shortcut = 'Alt_L'
-    try:
-        shortcut = get_string('org.mate.hud', None, 'shortcut')
-    except:
-        logging.error('org.mate.hud gsettings not found. Defaulting to %s.' % shortcut)
-    return shortcut
-
-def remove_autostart(filename):
-    config_dir = GLib.get_user_config_dir()
-    autostart_file = os.path.join(config_dir, 'autostart', filename)
-    if os.path.exists(autostart_file):
-        os.remove(autostart_file)
+# kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt "com.github.zren.PlasmaHUD,/PlasmaHUD,com.github.zren.PlasmaHUD,toggleHUD"
+# qdbus org.kde.KWin /KWin reconfigure
 
 if __name__ == "__main__":
     setproctitle.setproctitle('mate-hud')
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
-    # Remove old-style autostart .desktop file for mate-hud
-    remove_autostart('mate-hud.desktop')
+    DBusGMainLoop(set_as_default=True)
+    session_bus = dbus.SessionBus()
+    name = dbus.service.BusName('com.github.zren.PlasmaHUD', session_bus)
+    obj = PlasmaHUD(session_bus)
 
-    def change_shortcut(schema, key):
-        shortcut = settings.get_string("shortcut")
-        keybinder.rebind(shortcut)
-
-    def change_tap_timeout(schema, key):
-        tap_timeout = settings.get_int("tap-timeout")
-        keybinder.tap_timeout = tap_timeout;
-
-    enabled = False
-    enabled = get_bool('org.mate.hud', None, 'enabled')
-
-    if enabled:
-        shortcut = get_shortcut()
-
-        DBusGMainLoop(set_as_default=True)
-        keybinder = GlobalKeyBinding()
-        keybinder.grab(shortcut)
-        keybinder.connect("activate", hud, shortcut, "keystring %s (user data)" % shortcut)
-        keybinder.start()
-        logging.info("Press %s to handle keybinding", shortcut)
-
-        settings = Gio.Settings.new("org.mate.hud")
-        settings.connect("changed::shortcut", change_shortcut)
-        settings.connect("changed::tap-timeout", change_tap_timeout)
-
-        try:
-            GLib.MainLoop().run()
-        except KeyboardInterrupt:
-            GLib.MainLoop().quit()
-    else:
-        logging.info("The HUD is disabled via org.mate.hud in gsettings.")
+    try:
+        GLib.MainLoop().run()
+    except KeyboardInterrupt:
+        GLib.MainLoop().quit()
