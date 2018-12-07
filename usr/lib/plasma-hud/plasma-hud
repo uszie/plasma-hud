@@ -454,7 +454,6 @@ def hud():
     logging.debug('_KDE_NET_WM_APPMENU_OBJECT_PATH: %s', kde_appmenu_object_path)
 
     if gtk_menubar_object_path:
-        logging.debug('Appmenu found nothing.')
         # Many apps do not respect menu action groups, such as
         # LibreOffice and gnome-mpv, so we have to include all action
         # groups. Many other apps have these properties point to the
