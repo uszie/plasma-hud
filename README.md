@@ -1,18 +1,15 @@
-# mate-hud
+# plasma-hud
 
 Provides a way to run menubar commands through
 [rofi](https://davedavenport.github.io/rofi/), much like the Unity 7
-Heads-Up Display (HUD). `mate-hud` was originally forked from
-`i3-hud-menu`:
+Heads-Up Display (HUD). `plasma-hud` was forked from `mate-hud` which was based on
+`i3-hud-menu`.
 
   * https://jamcnaughton.com/2015/10/19/hud-for-xubuntu/
   * https://github.com/jamcnaughton/i3-hud-menu
   * https://github.com/RafaelBocquet/i3-hud-menu
-
-It was subsequently improved by incorporating improvements from
-[snippins](https://gist.github.com/snippins)
-
-  * [HUD.py](https://gist.github.com/snippins/ee943f2b25db555ef12107f7cee20241)
+  * https://github.com/ubuntu-mate/mate-hud
+  * https://github.com/hardpixel/gnome-hud
 
 ## What is a HUD and why should I care?
 
@@ -73,7 +70,3 @@ export UBUNTU_MENUPROXY=1
   * `rofi`
   * `unity-gtk2-module`
   * `unity-gtk3-module`
-
-A reference package for Debian/Ubuntu is available from:
-
-  * https://bitbucket.org/flexiondotorg/debian-packages
