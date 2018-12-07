@@ -712,7 +712,7 @@ def remove_autostart(filename):
 
 if __name__ == "__main__":
     setproctitle.setproctitle('mate-hud')
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
     # Remove old-style autostart .desktop file for mate-hud
     remove_autostart('mate-hud.desktop')
