@@ -172,7 +172,6 @@ class PlasmaHudConfig(KdeConfig):
         super().__init__(os.path.abspath(os.path.expanduser('~/.config/plasmahudrc')))
 
 # plasmahudrc = PlasmaHudConfig()
-
 rofi_process = None
 
 def get_menu(menuKeys):
@@ -198,25 +197,43 @@ def get_menu(menuKeys):
     bg_color = get_color(style_context, 'dark_bg_color', 'theme_bg_color')
     fg_color = get_color(style_context, 'dark_fg_color', 'theme_fg_color')
     borders = get_color(style_context, 'borders', 'border_color')
-
-    logging.debug('bg_color: %s', str(bg_color))
-    logging.debug('fg_color: %s', str(fg_color))
-    logging.debug('borders: %s', str(borders))
-
     selected_bg_color = rgba_to_hex(style_context.lookup_color('theme_selected_bg_color')[1])
     selected_fg_color = rgba_to_hex(style_context.lookup_color('theme_selected_fg_color')[1])
     error_bg_color = rgba_to_hex(style_context.lookup_color('error_bg_color')[1])
     error_fg_color = rgba_to_hex(style_context.lookup_color('error_fg_color')[1])
     info_bg_color = rgba_to_hex(style_context.lookup_color('info_bg_color')[1])
     info_fg_color = rgba_to_hex(style_context.lookup_color('info_fg_color')[1])
-    text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
+    # text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
 
-    bg_color = '#111111'
-    fg_color = '#eeeff0'
-    borders = '#000000'
-    selected_bg_color = '#062d25'
+    def logTheme():
+        logging.debug('font_name: %s', str(font_name))
+        logging.debug('bg_color: %s', str(bg_color))
+        logging.debug('fg_color: %s', str(fg_color))
+        logging.debug('borders: %s', str(borders))
+        logging.debug('selected_bg_color: %s', str(selected_bg_color))
+        logging.debug('selected_fg_color: %s', str(selected_fg_color))
+        logging.debug('error_bg_color: %s', str(error_bg_color))
+        logging.debug('error_fg_color: %s', str(error_fg_color))
+        logging.debug('info_bg_color: %s', str(info_bg_color))
+        logging.debug('info_fg_color: %s', str(info_fg_color))
 
-    logging.debug('selected_bg_color: %s', str(selected_bg_color))
+    logging.debug('=== Gtk.Window style_context ===')
+    logTheme()
+
+    plasmahudrc = PlasmaHudConfig()
+    font_name = plasmahudrc.get('Style', 'Font', fallback=font_name)
+    bg_color = plasmahudrc.get('Colors', 'Background', fallback=bg_color)
+    fg_color = plasmahudrc.get('Colors', 'Foreground', fallback=fg_color)
+    selected_bg_color = plasmahudrc.get('Colors', 'SelectedBackground', fallback=selected_bg_color)
+    selected_fg_color = plasmahudrc.get('Colors', 'SelectedForeground', fallback=selected_fg_color)
+    error_bg_color = plasmahudrc.get('Colors', 'ErrorBackground', fallback=error_bg_color)
+    error_fg_color = plasmahudrc.get('Colors', 'ErrorForeground', fallback=error_fg_color)
+    info_bg_color = plasmahudrc.get('Colors', 'InfoBackground', fallback=info_bg_color)
+    info_fg_color = plasmahudrc.get('Colors', 'InfoForeground', fallback=info_fg_color)
+    borders = plasmahudrc.get('Colors', 'Borders', fallback=borders)
+
+    logging.debug('=== After ~/.config/plasmahudrc ===')
+    logTheme()
 
     # Calculate display DPI value
     screen = window.get_screen()
