@@ -11,6 +11,8 @@ Heads-Up Display (HUD). `plasma-hud` was forked from `mate-hud` which was based 
   * https://github.com/ubuntu-mate/mate-hud
   * https://github.com/hardpixel/gnome-hud
 
+![](https://i.imgur.com/94nih11.png)
+
 ## What is a HUD and why should I care?
 
 A Heads-Up Display (HUD) allows you to search through an application's
@@ -20,42 +22,29 @@ recall if preferences sits under File, Edit or Tools on your favourite
 browser, you can just search for it rather than hunting through the
 menus.
 
-### Implementation
-
-[vala-panel-appmenu](https://github.com/rilian-la-te/vala-panel-appmenu)
-includes an implementation of the `com.canonical.AppMenu.Registrar` DBus
-service. Applications exporting their menu via `dbusmenu` need this
-service to run. `mate-hud.py` tries to get the menu of the currently
-focused window, lists possible actions and asks the user which one to
-run. `mate-hud.py`, binds itself to the `<Ctrl><Alt>space` keyboard
-shortcut by default.
-
-### Gsettings
-
-`mate-hud.py` reads one gsettings keys:
-
-  * `org.mate.hud`: `shortcut` (Default: <Super>Alt_L)
-
-`mate-hud.py` will not execute until those gsettings keys are created,
-which the `mate-hud` Debian package will do, and the `enabled` key
-is set to *True* using something like `dconf-editor`. MATE Tweak
-will soon add the functionality the endable/disable `mate-hud`.
-
 ### Manual Setup
 
-  * The `vala-panel-appmenu` applet for MATE should be added to a panel.
-  * `mate-hud.py` should be started on session start-up.
-  * The following should be added to the users `~/.profile` or `/etc/profile.d` or `/etc/X11/Xsession.d/`.
+* Either use the Global Menu widget, or add the App Menu button in to the titlebar.
+* Download `plasma-hud`
 
 ```
-if [ -n "$GTK_MODULES" ]; then
-    GTK_MODULES="$GTK_MODULES:unity-gtk-module"
-else
-    GTK_MODULES="unity-gtk-module"
-fi
+git clone https://github.com/Zren/plasma-hud
+cd plasma-hud
+```
 
-export GTK_MODULES
-export UBUNTU_MENUPROXY=1
+* Install files
+
+```
+sudo mkdir -p /usr/lib/plasma-hud
+sudo cp usr/lib/plasma-hud/plasma-hud /usr/lib/plasma-hud/
+sudo mkdir -p /etc/xdg/autostart
+sudo cp etc/xdg/autostart/plasma-hud.desktop /etc/xdg/autostart/
+```
+
+* Either run the script in the terminal for plasma-hud to work in your current session. Or relog since it should now autostart the next time you login.
+
+```
+/usr/lib/plasma-hud/plasma-hud
 ```
 
 * Run the following commands to bind the `Alt` keys.
@@ -77,3 +66,25 @@ qdbus org.kde.KWin /KWin reconfigure
   * `rofi`
   * `unity-gtk2-module`
   * `unity-gtk3-module`
+
+### Settings
+
+If you manally create `~/.config/plasmahudrc` you can change any of the following settings.
+
+```
+[Style]
+Font=Sans 10
+
+[Colors]
+Background=#111111
+Foreground=#eeeff0
+SelectedBackground=#062d25
+SelectedForeground=#1abc9c
+ErrorBackground=#000000
+ErrorForeground=#000000
+InfoBackground=#000000
+InfoForeground=#000000
+Borders=#000000
+```
+
+![](https://i.imgur.com/6ncDtWt.png)
