@@ -24,14 +24,16 @@ menus.
 
 ## Dependencies
 
-apt (Kubuntu / KDE Neon)
+### apt (Kubuntu / KDE Neon)
 
 ```
 sudo apt install rofi python3 python3-dbus python3-setproctitle python3-xlib gir1.2-gtk-3.0
-sudo apt install unity-gtk2-module unity-gtk3-module appmenu-qt
+sudo apt install appmenu-qt # Qt4
+sudo apt install appmenu-gtk2-module and appmenu-gtk3-module # Gtk2 / Gtk3
 ```
+Or use `unity-gtk2-module unity-gtk3-module` for Gtk2 / Gtk3.
 
-pacman (Arch)
+### pacman (Arch)
 
 ```
 pacman -S rofi python python-dbus python-setproctitle python-xlib gobject-introspection
