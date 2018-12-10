@@ -22,7 +22,23 @@ recall if preferences sits under File, Edit or Tools on your favourite
 browser, you can just search for it rather than hunting through the
 menus.
 
-### Manual Setup
+## Dependencies
+
+apt (Kubuntu / KDE Neon)
+
+```
+sudo apt install rofi python3 python3-dbus python3-setproctitle python3-xlib gir1.2-gtk-3.0
+sudo apt install unity-gtk2-module unity-gtk3-module appmenu-qt
+```
+
+pacman (Arch)
+
+```
+pacman -S rofi python python-dbus python-setproctitle python-xlib gobject-introspection
+pacman -S appmenu-gtk-module appmenu-qt4
+```
+
+## Manual Setup
 
 * Either use the Global Menu widget, or add the App Menu button in to the titlebar.
 * Download `plasma-hud`
@@ -53,19 +69,6 @@ sudo cp etc/xdg/autostart/plasma-hud.desktop /etc/xdg/autostart/
 kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt "com.github.zren.PlasmaHUD,/PlasmaHUD,com.github.zren.PlasmaHUD,toggleHUD"
 qdbus org.kde.KWin /KWin reconfigure
 ```
-
-## Dependencies
-
-  * `appmenu-qt`
-  * `gir1.2-gtk-3.0`
-  * `mate-desktop`
-  * `python3`
-  * `python3-dbus`
-  * `python3-setproctitle`
-  * `python3-xlib`
-  * `rofi`
-  * `unity-gtk2-module`
-  * `unity-gtk3-module`
 
 ### Settings
 
