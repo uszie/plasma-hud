@@ -211,24 +211,24 @@ def get_menu(menuKeys):
 
     logging.debug("get_menu.rofi_process:  %s", rofi_process)
     rofi_process = subprocess.Popen(['rofi', '-dmenu', '-i',
-                                 '-location', '1',
-                                 '-width', '100', '-p', 'HUD',
-                                 '-lines', '10', '-font', font_name,
-                                 '-dpi', str(dpi),
-                                 '-separator-style', 'none',
-                                 '-hide-scrollbar',
-                                 '-click-to-exit',
-                                 '-levenshtein-sort',
-                                 '-line-padding', '2',
-                                 '-kb-cancel', 'Escape',
-                                 '-sync', # withhold display until menu entries are ready
-                                 '-monitor', '-2', # show in the current application
-                                 '-color-enabled',
-                                 '-color-window', bg_color +", " + borders + ", " + borders,
-                                 '-color-normal', bg_color +", " + fg_color + ", " + bg_color + ", " + selected_bg_color + ", " + selected_fg_color,
-                                 '-color-active', bg_color +", " + fg_color + ", " + bg_color + ", " + info_bg_color + ", " + info_fg_color,
-                                 '-color-urgent', bg_color +", " + fg_color + ", " + bg_color + ", " + error_bg_color + ", " + error_fg_color],
-                                 stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        '-location', '1',
+        '-width', '100', '-p', 'HUD',
+        '-lines', '10', '-font', font_name,
+        '-dpi', str(dpi),
+        '-separator-style', 'none',
+        '-hide-scrollbar',
+        '-click-to-exit',
+        '-levenshtein-sort',
+        '-line-padding', '2',
+        '-kb-cancel', 'Escape',
+        '-sync', # withhold display until menu entries are ready
+        '-monitor', '-2', # show in the current application
+        '-color-enabled',
+        '-color-window', bg_color +", " + borders + ", " + borders,
+        '-color-normal', bg_color +", " + fg_color + ", " + bg_color + ", " + selected_bg_color + ", " + selected_fg_color,
+        '-color-active', bg_color +", " + fg_color + ", " + bg_color + ", " + info_bg_color + ", " + info_fg_color,
+        '-color-urgent', bg_color +", " + fg_color + ", " + bg_color + ", " + error_bg_color + ", " + error_fg_color],
+        stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     rofi_process.stdin.write(menu_string.encode('utf-8'))
     menu_result = rofi_process.communicate()[0].decode('utf8').rstrip()
     rofi_process.stdin.close()
