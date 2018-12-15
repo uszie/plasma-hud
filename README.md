@@ -86,6 +86,9 @@ qdbus org.kde.KWin /KWin reconfigure
 If you manally create `~/.config/plasmahudrc` you can change any of the following settings.
 
 ```
+[General]
+Matching=fuzzy
+
 [Style]
 Font=Sans 10
 
@@ -100,6 +103,8 @@ InfoBackground=#000000
 InfoForeground=#000000
 Borders=#000000
 ```
+
+* `[General] Matching=fuzzy` can be either `fuzzy` matching or `normal` matching where it matches a keyword exactly. See `man rofi | grep "\-matching" -A20` for more info.
 
 ![](https://i.imgur.com/6ncDtWt.png)
 

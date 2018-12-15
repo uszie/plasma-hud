@@ -181,6 +181,7 @@ def get_menu(menuKeys):
     logTheme()
 
     plasmahudrc = PlasmaHudConfig()
+    matching = plasmahudrc.get('General', 'Matching', fallback='fuzzy')
     font_name = plasmahudrc.get('Style', 'Font', fallback=font_name)
     bg_color = plasmahudrc.get('Colors', 'Background', fallback=bg_color)
     fg_color = plasmahudrc.get('Colors', 'Foreground', fallback=fg_color)
@@ -222,6 +223,7 @@ def get_menu(menuKeys):
         '-hide-scrollbar',
         '-click-to-exit',
         '-levenshtein-sort',
+        '-matching', matching,
         '-line-padding', '2',
         '-kb-cancel', 'Escape',
         '-sync', # withhold display until menu entries are ready
