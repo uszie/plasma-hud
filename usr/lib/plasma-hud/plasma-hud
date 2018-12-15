@@ -210,10 +210,13 @@ def get_menu(menuKeys):
     dpi = scale * (width_dpi + height_dpi) / 2
 
     logging.debug("get_menu.rofi_process:  %s", rofi_process)
-    rofi_process = subprocess.Popen(['rofi', '-dmenu', '-i',
+    rofi_process = subprocess.Popen(['rofi', '-dmenu',
+        '-i', # Case insensitive filtering
         '-location', '1',
-        '-width', '100', '-p', 'HUD',
-        '-lines', '10', '-font', font_name,
+        '-width', '100',
+        '-p', 'HUD', # Text beside filter textfield
+        '-lines', '10',
+        '-font', font_name,
         '-dpi', str(dpi),
         '-separator-style', 'none',
         '-hide-scrollbar',
