@@ -102,3 +102,19 @@ Borders=#000000
 ```
 
 ![](https://i.imgur.com/6ncDtWt.png)
+
+## Uninstall
+
+* Run the following commands to unbind the `Alt` keys.
+
+```
+kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt ""
+qdbus org.kde.KWin /KWin reconfigure
+```
+
+* Uninstall files
+
+```
+sudo rm /usr/lib/plasma-hud/plasma-hud
+sudo rm /etc/xdg/autostart/plasma-hud.desktop
+```
