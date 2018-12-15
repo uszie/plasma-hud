@@ -41,7 +41,7 @@ def datafilelist(installbase, sourcebase):
     return datafileList
 
 data_files = [
-    ('{prefix}/lib/mate-hud/'.format(prefix=sys.prefix), ['usr/lib/mate-hud/mate-hud']),
+    ('{prefix}/lib/plasma-hud/'.format(prefix=sys.prefix), ['usr/lib/plasma-hud/plasma-hud']),
     ('/etc/xdg/autostart/', ['etc/xdg/autostart/plasma-hud.desktop']),
 ]
 
