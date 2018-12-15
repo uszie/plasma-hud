@@ -97,10 +97,6 @@ Background=#111111
 Foreground=#eeeff0
 SelectedBackground=#062d25
 SelectedForeground=#1abc9c
-ErrorBackground=#000000
-ErrorForeground=#000000
-InfoBackground=#000000
-InfoForeground=#000000
 Borders=#000000
 ```
 
