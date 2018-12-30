@@ -73,6 +73,26 @@ def format_path(path):
     result = result.replace('_', '')
     return result.replace('>', u'\u0020\u0020\u00BB\u0020\u0020')
 
+def format_shortcut(shortcut):
+    # GTK
+    result = shortcut.replace('<Primary>', 'Ctrl+')
+    result = result.replace('<Shift>', 'Shift+')
+    result = result.replace('bracketleft', '[')
+    result = result.replace('bracketright', ']')
+    result = result.replace('slash', '/')
+    result = result.replace('Return', '⏎')
+    # Qt
+    result = result.replace('Control+', 'Ctrl+')
+    return result
+
+def format_menuitem(path, shortcut):
+    result = format_path(path)
+    if shortcut:
+        shortcut = format_shortcut(shortcut)
+        result += '    <span fgcolor="#888888">' + shortcut + '</span>'
+    print('\t', result)
+    return result
+
 def rgba_to_hex(color):
    """
    Return hexadecimal string for :class:`Gdk.RGBA` `color`.
@@ -222,8 +242,12 @@ def get_menu(menuKeys):
         '-separator-style', 'none',
         '-hide-scrollbar',
         '-click-to-exit',
-        '-levenshtein-sort',
-        '-matching', matching,
+        '-markup-rows',
+        # '-levenshtein-sort',
+        '-sorting', 'fsf',
+        '-sort',
+        # '-matching', matching,
+        '-matching', 'normal',
         '-line-padding', '2',
         '-kb-cancel', 'Escape',
         '-sync', # withhold display until menu entries are ready
@@ -307,9 +331,14 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         else:
             new_path = path
 
+        shortcut = None
+        if 'shortcut' in item_props:
+            shortcut = '+'.join(item_props['shortcut'][0])
+            print('shortcut', shortcut)
+
         if len(item_children) == 0:
             if new_path not in blacklist:
-                dbusmenu_item_dict[format_path(new_path)] = item_id
+                dbusmenu_item_dict[format_menuitem(new_path, shortcut)] = item_id
         else:
             blacklist.append(new_path)
             for child in item_children:
@@ -404,10 +433,15 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
                     elif 'action' in element:
                         # This is pretty straightforward:
                         menu_action = str(element['action']).split(".",1)[1]
-                        action_path = format_path(path + " > " + element['label'])
-                        gtk_menubar_action_dict[action_path] = menu_action
+                        action_path = path + " > " + element['label']
+                        action_shortcut = None
+                        if 'accel' in element:
+                            action_shortcut = str(element['accel'])
+                        print('action', action_path, action_shortcut)
+                        action_entry = format_menuitem(action_path, action_shortcut)
+                        gtk_menubar_action_dict[action_entry] = menu_action
                         if 'target' in element:
-                            gtk_menubar_action_target_dict[action_path] = element['target']
+                            gtk_menubar_action_target_dict[action_entry] = element['target']
                 else:
                     if ':submenu' in element or ':section' in element:
                         if ':section' in element:
@@ -448,16 +482,16 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
         except:
             pass
 
-        for action_path in gtk_actions_paths_list:
+        for action_entry in gtk_actions_paths_list:
             try:
-                action_object = session_bus.get_object(gtk_bus_name, action_path)
+                action_object = session_bus.get_object(gtk_bus_name, action_entry)
                 action_iface = dbus.Interface(action_object, dbus_interface='org.gtk.Actions')
                 not_use_platform_data = dict()
                 not_use_platform_data["not used"] = "not used"
                 logging.debug('GTK Action : %s', str(action))
                 action_iface.Activate(action, target, not_use_platform_data)
             except Exception as e:
-                logging.debug('action_path: %s', str(action_path))
+                logging.debug('action_entry: %s', str(action_entry))
     return True
 
 def hud():
