@@ -95,6 +95,7 @@ Font=Sans 10
 [Colors]
 Background=#111111
 Foreground=#eeeff0
+DisabledForeground=#444444
 SelectedBackground=#062d25
 SelectedForeground=#1abc9c
 Borders=#000000

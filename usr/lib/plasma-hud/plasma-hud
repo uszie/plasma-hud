@@ -164,6 +164,8 @@ def get_menu(menuKeys):
     info_bg_color = rgba_to_hex(style_context.lookup_color('info_bg_color')[1])
     info_fg_color = rgba_to_hex(style_context.lookup_color('info_fg_color')[1])
     # text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
+    disabled_fg_color = '#888888'
+
 
     def logTheme():
         logging.debug('font_name: %s', str(font_name))
@@ -192,9 +194,13 @@ def get_menu(menuKeys):
     info_bg_color = plasmahudrc.get('Colors', 'InfoBackground', fallback=info_bg_color)
     info_fg_color = plasmahudrc.get('Colors', 'InfoForeground', fallback=info_fg_color)
     borders = plasmahudrc.get('Colors', 'Borders', fallback=borders)
+    disabled_fg_color = plasmahudrc.get('Colors', 'DisabledForeground', fallback=disabled_fg_color)
 
     logging.debug('=== After ~/.config/plasmahudrc ===')
     logTheme()
+
+    # Repalce custom colors
+    menu_string = menu_string.replace('<span color="disabled">', '<span color="' + disabled_fg_color + '">')
 
     # Calculate display DPI value
     screen = window.get_screen()
@@ -223,6 +229,7 @@ def get_menu(menuKeys):
         '-hide-scrollbar',
         '-click-to-exit',
         '-levenshtein-sort',
+        '-markup-rows',
         '-matching', matching,
         '-line-padding', '2',
         '-kb-cancel', 'Escape',
@@ -280,7 +287,7 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         logging.info('Unable to access dbusmenu items.')
         return False
 
-    dbusmenu_root_item = dbusmenu_object_iface.GetLayout(0, 0, ["label", "children-display"])
+    dbusmenu_root_item = dbusmenu_object_iface.GetLayout(0, 0, ["label", "children-display", "enabled"])
     dbusmenu_item_dict = dict()
 
     #For excluding items which have no action
@@ -299,7 +306,11 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
 
         if len(item_children) == 0:
             if new_path not in blacklist:
-                dbusmenu_item_dict[format_path(new_path)] = item_id
+                formatted_path = format_path(new_path)
+                if 'enabled' in item_props:
+                    if not item_props['enabled']:
+                        formatted_path = '<span color="disabled">' + formatted_path + '</span>'
+                dbusmenu_item_dict[formatted_path] = item_id
         else:
             blacklist.append(new_path)
             for child in item_children:
