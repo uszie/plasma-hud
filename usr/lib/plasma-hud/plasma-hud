@@ -286,20 +286,10 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
     #For excluding items which have no action
     blacklist = []
 
-    """ expanse_all_menu_with_dbus """
-    def expanse_all_menu_with_dbus(item, root, path):
+    """ expand nested dbus mwnu  """
+    def explore_dbus_menu(item, path):
         item_id = item[0]
         item_props = item[1]
-
-        # expand if necessary
-        if 'children-display' in item_props:
-            dbusmenu_object_iface.AboutToShow(item_id)
-            dbusmenu_object_iface.Event(item_id, "opened", "not used", dbus.UInt32(time.time())) #fix firefox
-        try:
-            item = dbusmenu_object_iface.GetLayout(item_id, 1, ["label", "children-display"])[1]
-        except:
-            return
-
         item_children = item[2]
 
         if 'label' in item_props:
@@ -313,7 +303,25 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         else:
             blacklist.append(new_path)
             for child in item_children:
-                expanse_all_menu_with_dbus(child, False, new_path)
+                explore_dbus_menu(child, new_path)
+
+
+    """ expanse_all_menu_with_dbus """
+    def expanse_all_menu_with_dbus(item, root, path):
+        item_id = item[0]
+        item_props = item[1]
+
+        # expand if necessary
+        if 'children-display' in item_props:
+            dbusmenu_object_iface.AboutToShow(item_id)
+            dbusmenu_object_iface.Event(item_id, "opened", "not used", dbus.UInt32(time.time())) #fix firefox
+
+        try:
+            item = dbusmenu_object_iface.GetLayout(item_id, -1, ["label", "children-display"])[1]
+        except:
+            return
+
+        explore_dbus_menu(item, path)
 
     expanse_all_menu_with_dbus(dbusmenu_root_item[1], True, "")
     menuKeys = sorted(dbusmenu_item_dict.keys())
