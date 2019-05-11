@@ -466,6 +466,9 @@ def hud():
     # Get Window properties and GTK MenuModel Bus name
     ewmh = EWMH()
     win = ewmh.getActiveWindow()
+    if win is None:
+        logging.debug('ewmh.getActiveWindow returned None, giving up')
+        return
     window_id = hex(ewmh._getProperty('_NET_ACTIVE_WINDOW')[0])
 
     def get_prop_str(propKey):
