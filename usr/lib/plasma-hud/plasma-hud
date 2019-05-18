@@ -17,6 +17,15 @@ from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import Gio, GLib, Gtk, Gdk, GObject
 from Xlib import display, protocol, X, Xatom, error
 
+# https://en.wikipedia.org/wiki/Whitespace_character
+NOBREAKSPACE = '\u00A0'
+EMSPACE = '\u2003'
+# PATHARROW = '>'
+# PATHARROW = '▶'
+PATHARROW = '\u00BB'
+# PATHSEPERATOR = NOBREAKSPACE + NOBREAKSPACE + PATHARROW + NOBREAKSPACE + NOBREAKSPACE
+PATHSEPERATOR = EMSPACE + PATHARROW + EMSPACE
+
 class EWMH:
     """This class provides the ability to get and set properties defined
     by the EWMH spec. It was blanty ripped out of pyewmh
@@ -67,30 +76,60 @@ class EWMH:
 
 def format_path(path):
     #logging.debug('Path:%s', path)
-    result = path.replace('>', '', 1)
-    result = result.replace('Root > ', '')
-    result = result.replace('Label Empty > ', '')
+    result = path.replace(PATHSEPERATOR, '', 1)
+    result = result.replace('Root' + PATHSEPERATOR, '')
+    result = result.replace('Label Empty' + PATHSEPERATOR, '')
     result = result.replace('_', '')
-    return result.replace('>', u'\u0020\u0020\u00BB\u0020\u0020')
-
-def format_shortcut(shortcut):
-    # GTK
-    result = shortcut.replace('<Primary>', 'Ctrl+')
-    result = result.replace('<Shift>', 'Shift+')
-    result = result.replace('bracketleft', '[')
-    result = result.replace('bracketright', ']')
-    result = result.replace('slash', '/')
-    result = result.replace('Return', '⏎')
-    # Qt
-    result = result.replace('Control+', 'Ctrl+')
+    # return result.replace(PATHARROW, u'\u0020\u0020\u00BB\u0020\u0020')
     return result
+
+def convert_alphanumeric_to_unicode(text):
+    out = ''
+    for c in text:
+        if c.isnumeric():
+            c = chr(ord(c) + 120764) #convert numbers
+        elif c.islower():
+            c = chr(ord(c) + 120205) #convert lowercase
+        elif c.isupper():
+            c = chr(ord(c) + 120211) #convert uppercase
+        else:
+            pass
+
+        out += c
+
+    # print('{} => {}'.format(text, out))
+    return out
+
+def format_shortcut(text):
+    # GTK
+    text = text.replace('<Primary>', 'Ctrl+')
+    text = text.replace('<Shift>', 'Shift+')
+    text = text.replace('<Alt>', 'Alt+')
+    text = text.replace('<Mod4>', 'Meta+')
+    text = text.replace('bracketleft', '[')
+    text = text.replace('bracketright', ']')
+    text = text.replace('backslash', '\\')
+    text = text.replace('slash', '/')
+    text = text.replace('Return', '⏎')
+
+    # Qt
+    text = text.replace('Control+', 'Ctrl+')
+
+    # Prevent shortcut from showing up in search
+    text = convert_alphanumeric_to_unicode(text)
+    text = text.replace('+', '＋') # Full-width Plus (U+FF0B)
+
+    return text
 
 def format_menuitem(path, shortcut):
     result = format_path(path)
     if shortcut:
         shortcut = format_shortcut(shortcut)
-        result += '    <span fgcolor="#888888">' + shortcut + '</span>'
-    print('\t', result)
+
+        # result += EMSPACE + EMSPACE + '[' + shortcut + ']'
+        # result += '    <span fgcolor="#888888">' + shortcut + '</span>'
+        result += EMSPACE + '<span fgcolor="#888888">' + shortcut + '</span>'
+    # print('\t', result)
     return result
 
 def rgba_to_hex(color):
@@ -327,7 +366,7 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         item_children = item[2]
 
         if 'label' in item_props:
-            new_path = path + " > " + item_props['label']
+            new_path = path + PATHSEPERATOR + item_props['label']
         else:
             new_path = path
 
@@ -418,7 +457,7 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
                         # There theoretically could be a section that is also a submenu, so we have to handel this via queue
                         # submenus are more important than sections
                         if ':submenu' in element:
-                            queue(element[':submenu'][0], None, path + " > " + element['label'])
+                            queue(element[':submenu'][0], None, path + PATHSEPERATOR + element['label'])
                             # We ignore whether or not a submenu points to a specific index, shouldn't matter because of the way the menu got exportet
                             # Worst that can happen are some duplicates
                             # Also we don't Start() directly which could mean we get nothing under this label but this shouldn't really happen because there shouldn't be two submenus
@@ -433,7 +472,7 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
                     elif 'action' in element:
                         # This is pretty straightforward:
                         menu_action = str(element['action']).split(".",1)[1]
-                        action_path = path + " > " + element['label']
+                        action_path = path + PATHSEPERATOR + element['label']
                         action_shortcut = None
                         if 'accel' in element:
                             action_shortcut = str(element['accel'])
