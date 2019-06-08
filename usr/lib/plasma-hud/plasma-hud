@@ -17,6 +17,29 @@ from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import Gio, GLib, Gtk, Gdk, GObject
 from Xlib import display, protocol, X, Xatom, error
 
+
+### Constants
+# https://en.wikipedia.org/wiki/Whitespace_character
+NOBREAKSPACE = '\u00A0'
+EMSPACE = '\u2003'
+# PATHARROW = '>'
+# PATHARROW = '▶'
+PATHARROW = '\u00BB'
+# PATHSEPERATOR = NOBREAKSPACE + NOBREAKSPACE + PATHARROW + NOBREAKSPACE + NOBREAKSPACE
+PATHSEPERATOR = EMSPACE + PATHARROW + EMSPACE
+
+DEFAULT_SHORTCUT_FG_COLOR = '#888888'
+
+
+
+### Globals
+# plasmahudrc = None
+rofi_process = None
+shortcut_fg_color = DEFAULT_SHORTCUT_FG_COLOR
+
+
+
+### Classes / Util Functions
 class EWMH:
     """This class provides the ability to get and set properties defined
     by the EWMH spec. It was blanty ripped out of pyewmh
@@ -67,11 +90,61 @@ class EWMH:
 
 def format_path(path):
     #logging.debug('Path:%s', path)
-    result = path.replace('>', '', 1)
-    result = result.replace('Root > ', '')
-    result = result.replace('Label Empty > ', '')
+    result = path.replace(PATHSEPERATOR, '', 1)
+    result = result.replace('Root' + PATHSEPERATOR, '')
+    result = result.replace('Label Empty' + PATHSEPERATOR, '')
     result = result.replace('_', '')
-    return result.replace('>', u'\u0020\u0020\u00BB\u0020\u0020')
+    # return result.replace(PATHARROW, u'\u0020\u0020\u00BB\u0020\u0020')
+    return result
+
+def convert_alphanumeric_to_unicode(text):
+    out = ''
+    for c in text:
+        if c.isnumeric():
+            c = chr(ord(c) + 120764) #convert numbers
+        elif c.islower():
+            c = chr(ord(c) + 120205) #convert lowercase
+        elif c.isupper():
+            c = chr(ord(c) + 120211) #convert uppercase
+        else:
+            pass
+
+        out += c
+
+    # print('{} => {}'.format(text, out))
+    return out
+
+def format_shortcut(text):
+    # GTK
+    text = text.replace('<Primary>', 'Ctrl+')
+    text = text.replace('<Shift>', 'Shift+')
+    text = text.replace('<Alt>', 'Alt+')
+    text = text.replace('<Mod4>', 'Meta+')
+    text = text.replace('bracketleft', '[')
+    text = text.replace('bracketright', ']')
+    text = text.replace('backslash', '\\')
+    text = text.replace('slash', '/')
+    text = text.replace('Return', '⏎')
+
+    # Qt
+    text = text.replace('Control+', 'Ctrl+')
+
+    # Prevent shortcut from showing up in search
+    text = convert_alphanumeric_to_unicode(text)
+    text = text.replace('+', '＋') # Full-width Plus (U+FF0B)
+
+    # Add Color.
+    # Make sure font is not monospace, which clips the Sans Serif characters.
+    text = '<span fgcolor="' + shortcut_fg_color + '" face="Sans Serif">' + text + '</span>'
+    return text
+
+def format_menuitem(path, shortcut):
+    result = format_path(path)
+    if shortcut:
+        shortcut = format_shortcut(shortcut)
+        result += EMSPACE + shortcut
+    # print('\t', result)
+    return result
 
 def rgba_to_hex(color):
    """
@@ -131,14 +204,13 @@ class PlasmaHudConfig(KdeConfig):
     def __init__(self):
         super().__init__(os.path.abspath(os.path.expanduser('~/.config/plasmahudrc')))
 
-# plasmahudrc = PlasmaHudConfig()
-rofi_process = None
 
+### Implementation
 def get_menu(menuKeys):
     """
     Generate menu of available menu items.
     """
-    global rofi_process
+    global rofi_process, shortcut_fg_color
 
     if not menuKeys:
         return ''
@@ -193,6 +265,9 @@ def get_menu(menuKeys):
     info_fg_color = plasmahudrc.get('Colors', 'InfoForeground', fallback=info_fg_color)
     borders = plasmahudrc.get('Colors', 'Borders', fallback=borders)
 
+    # TODO: Call format_shortcut/format_menuitem after reading the shortcut_fg_color from config.
+    # shortcut_fg_color = plasmahudrc.get('Colors', 'ShortcutForeground', fallback=DEFAULT_SHORTCUT_FG_COLOR)
+
     logging.debug('=== After ~/.config/plasmahudrc ===')
     logTheme()
 
@@ -222,8 +297,12 @@ def get_menu(menuKeys):
         '-separator-style', 'none',
         '-hide-scrollbar',
         '-click-to-exit',
-        '-levenshtein-sort',
-        '-matching', matching,
+        '-markup-rows',
+        # '-levenshtein-sort',
+        '-sorting', 'fsf',
+        '-sort',
+        # '-matching', matching,
+        '-matching', 'normal',
         '-line-padding', '2',
         '-kb-cancel', 'Escape',
         '-sync', # withhold display until menu entries are ready
@@ -303,13 +382,18 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         item_children = item[2]
 
         if 'label' in item_props:
-            new_path = path + " > " + item_props['label']
+            new_path = path + PATHSEPERATOR + item_props['label']
         else:
             new_path = path
 
+        shortcut = None
+        if 'shortcut' in item_props:
+            shortcut = '+'.join(item_props['shortcut'][0])
+            # logging.debug('shortcut', shortcut)
+
         if len(item_children) == 0:
             if new_path not in blacklist:
-                dbusmenu_item_dict[format_path(new_path)] = item_id
+                dbusmenu_item_dict[format_menuitem(new_path, shortcut)] = item_id
         else:
             blacklist.append(new_path)
             for child in item_children:
@@ -389,7 +473,7 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
                         # There theoretically could be a section that is also a submenu, so we have to handel this via queue
                         # submenus are more important than sections
                         if ':submenu' in element:
-                            queue(element[':submenu'][0], None, path + " > " + element['label'])
+                            queue(element[':submenu'][0], None, path + PATHSEPERATOR + element['label'])
                             # We ignore whether or not a submenu points to a specific index, shouldn't matter because of the way the menu got exportet
                             # Worst that can happen are some duplicates
                             # Also we don't Start() directly which could mean we get nothing under this label but this shouldn't really happen because there shouldn't be two submenus
@@ -404,10 +488,15 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
                     elif 'action' in element:
                         # This is pretty straightforward:
                         menu_action = str(element['action']).split(".",1)[1]
-                        action_path = format_path(path + " > " + element['label'])
-                        gtk_menubar_action_dict[action_path] = menu_action
+                        action_path = path + PATHSEPERATOR + element['label']
+                        action_shortcut = None
+                        if 'accel' in element:
+                            action_shortcut = str(element['accel'])
+                        # logging.debug('action', action_path, action_shortcut)
+                        action_entry = format_menuitem(action_path, action_shortcut)
+                        gtk_menubar_action_dict[action_entry] = menu_action
                         if 'target' in element:
-                            gtk_menubar_action_target_dict[action_path] = element['target']
+                            gtk_menubar_action_target_dict[action_entry] = element['target']
                 else:
                     if ':submenu' in element or ':section' in element:
                         if ':section' in element:
@@ -448,16 +537,16 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
         except:
             pass
 
-        for action_path in gtk_actions_paths_list:
+        for action_entry in gtk_actions_paths_list:
             try:
-                action_object = session_bus.get_object(gtk_bus_name, action_path)
+                action_object = session_bus.get_object(gtk_bus_name, action_entry)
                 action_iface = dbus.Interface(action_object, dbus_interface='org.gtk.Actions')
                 not_use_platform_data = dict()
                 not_use_platform_data["not used"] = "not used"
                 logging.debug('GTK Action : %s', str(action))
                 action_iface.Activate(action, target, not_use_platform_data)
             except Exception as e:
-                logging.debug('action_path: %s', str(action_path))
+                logging.debug('action_entry: %s', str(action_entry))
     return True
 
 def hud():
