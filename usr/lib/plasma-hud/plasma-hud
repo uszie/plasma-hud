@@ -35,6 +35,7 @@ DEFAULT_SHORTCUT_FG_COLOR = '#888888'
 ### Globals
 # plasmahudrc = None
 rofi_process = None
+show_shortcuts = False
 shortcut_fg_color = DEFAULT_SHORTCUT_FG_COLOR
 
 
@@ -140,7 +141,7 @@ def format_shortcut(text):
 
 def format_menuitem(path, shortcut):
     result = format_path(path)
-    if shortcut:
+    if show_shortcuts and shortcut:
         shortcut = format_shortcut(shortcut)
         result += EMSPACE + shortcut
     # print('\t', result)
