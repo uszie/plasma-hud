@@ -17,6 +17,8 @@ from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import Gio, GLib, Gtk, Gdk, GObject
 from Xlib import display, protocol, X, Xatom, error
 
+
+### Constants
 # https://en.wikipedia.org/wiki/Whitespace_character
 NOBREAKSPACE = '\u00A0'
 EMSPACE = '\u2003'
@@ -26,6 +28,18 @@ PATHARROW = '\u00BB'
 # PATHSEPERATOR = NOBREAKSPACE + NOBREAKSPACE + PATHARROW + NOBREAKSPACE + NOBREAKSPACE
 PATHSEPERATOR = EMSPACE + PATHARROW + EMSPACE
 
+DEFAULT_SHORTCUT_FG_COLOR = '#888888'
+
+
+
+### Globals
+# plasmahudrc = None
+rofi_process = None
+shortcut_fg_color = DEFAULT_SHORTCUT_FG_COLOR
+
+
+
+### Classes / Util Functions
 class EWMH:
     """This class provides the ability to get and set properties defined
     by the EWMH spec. It was blanty ripped out of pyewmh
@@ -119,16 +133,16 @@ def format_shortcut(text):
     text = convert_alphanumeric_to_unicode(text)
     text = text.replace('+', '＋') # Full-width Plus (U+FF0B)
 
+    # Add Color.
+    # Make sure font is not monospace, which clips the Sans Serif characters.
+    text = '<span fgcolor="' + shortcut_fg_color + '" face="Sans Serif">' + text + '</span>'
     return text
 
 def format_menuitem(path, shortcut):
     result = format_path(path)
     if shortcut:
         shortcut = format_shortcut(shortcut)
-
-        # result += EMSPACE + EMSPACE + '[' + shortcut + ']'
-        # result += '    <span fgcolor="#888888">' + shortcut + '</span>'
-        result += EMSPACE + '<span fgcolor="#888888">' + shortcut + '</span>'
+        result += EMSPACE + shortcut
     # print('\t', result)
     return result
 
@@ -190,14 +204,13 @@ class PlasmaHudConfig(KdeConfig):
     def __init__(self):
         super().__init__(os.path.abspath(os.path.expanduser('~/.config/plasmahudrc')))
 
-# plasmahudrc = PlasmaHudConfig()
-rofi_process = None
 
+### Implementation
 def get_menu(menuKeys):
     """
     Generate menu of available menu items.
     """
-    global rofi_process
+    global rofi_process, shortcut_fg_color
 
     if not menuKeys:
         return ''
@@ -251,6 +264,9 @@ def get_menu(menuKeys):
     info_bg_color = plasmahudrc.get('Colors', 'InfoBackground', fallback=info_bg_color)
     info_fg_color = plasmahudrc.get('Colors', 'InfoForeground', fallback=info_fg_color)
     borders = plasmahudrc.get('Colors', 'Borders', fallback=borders)
+
+    # TODO: Call format_shortcut/format_menuitem after reading the shortcut_fg_color from config.
+    # shortcut_fg_color = plasmahudrc.get('Colors', 'ShortcutForeground', fallback=DEFAULT_SHORTCUT_FG_COLOR)
 
     logging.debug('=== After ~/.config/plasmahudrc ===')
     logTheme()
