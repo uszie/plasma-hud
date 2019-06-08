@@ -389,7 +389,7 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         shortcut = None
         if 'shortcut' in item_props:
             shortcut = '+'.join(item_props['shortcut'][0])
-            print('shortcut', shortcut)
+            # logging.debug('shortcut', shortcut)
 
         if len(item_children) == 0:
             if new_path not in blacklist:
@@ -492,7 +492,7 @@ def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list
                         action_shortcut = None
                         if 'accel' in element:
                             action_shortcut = str(element['accel'])
-                        print('action', action_path, action_shortcut)
+                        # logging.debug('action', action_path, action_shortcut)
                         action_entry = format_menuitem(action_path, action_shortcut)
                         gtk_menubar_action_dict[action_entry] = menu_action
                         if 'target' in element:
