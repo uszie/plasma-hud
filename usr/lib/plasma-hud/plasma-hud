@@ -381,13 +381,13 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
 
         item_children = item[2]
 
-        if 'label' in item_props:
+        if 'label' in item_props and item_props['label']:
             new_path = path + PATHSEPERATOR + item_props['label']
         else:
             new_path = path
 
         shortcut = None
-        if 'shortcut' in item_props:
+        if 'shortcut' in item_props and item_props['shortcut']:
             shortcut = '+'.join(item_props['shortcut'][0])
             # logging.debug('shortcut', shortcut)
 
