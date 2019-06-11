@@ -359,7 +359,12 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         logging.info('Unable to access dbusmenu items.')
         return False
 
-    dbusmenu_root_item = dbusmenu_object_iface.GetLayout(0, 0, ["label", "children-display"])
+    def get_layout(parent_id = 0, recursion_depth = -1, property_names = ["label", "children-display"]):
+        """Returns a layout as a list of items. Each item is an array of [item_id, item_props, item_children]."""
+        revision, layout = dbusmenu_object_iface.GetLayout(parent_id, recursion_depth, property_names)
+        return layout
+
+    dbusmenu_root_item = get_layout(recursion_depth=0)
     dbusmenu_item_dict = dict()
 
     #For excluding items which have no action
@@ -375,7 +380,7 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
             dbusmenu_object_iface.AboutToShow(item_id)
             dbusmenu_object_iface.Event(item_id, "opened", "not used", dbus.UInt32(time.time())) #fix firefox
         try:
-            item = dbusmenu_object_iface.GetLayout(item_id, 1, ["label", "children-display"])[1]
+            item = get_layout(item_id, recursion_depth=1)
         except:
             return
 
@@ -399,7 +404,7 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
             for child in item_children:
                 expanse_all_menu_with_dbus(child, False, new_path)
 
-    expanse_all_menu_with_dbus(dbusmenu_root_item[1], True, "")
+    expanse_all_menu_with_dbus(dbusmenu_root_item, True, "")
     menuKeys = dbusmenu_item_dict.keys()
 
     menu_result = get_menu(menuKeys)
