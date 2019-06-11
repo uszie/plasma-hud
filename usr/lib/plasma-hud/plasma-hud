@@ -400,7 +400,7 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
                 expanse_all_menu_with_dbus(child, False, new_path)
 
     expanse_all_menu_with_dbus(dbusmenu_root_item[1], True, "")
-    menuKeys = sorted(dbusmenu_item_dict.keys())
+    menuKeys = dbusmenu_item_dict.keys()
 
     menu_result = get_menu(menuKeys)
 
