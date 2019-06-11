@@ -364,26 +364,16 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
         revision, layout = dbusmenu_object_iface.GetLayout(parent_id, recursion_depth, property_names)
         return layout
 
-    dbusmenu_root_item = get_layout(recursion_depth=0)
+    dbusmenu_root_item = get_layout()
     dbusmenu_item_dict = dict()
 
     #For excluding items which have no action
     blacklist = []
 
-    """ expanse_all_menu_with_dbus """
-    def expanse_all_menu_with_dbus(item, root, path):
+    # --- Expand nested dbus menu
+    def explore_dbus_menu(item, path):
         item_id = item[0]
         item_props = item[1]
-
-        # expand if necessary
-        if 'children-display' in item_props:
-            dbusmenu_object_iface.AboutToShow(item_id)
-            dbusmenu_object_iface.Event(item_id, "opened", "not used", dbus.UInt32(time.time())) #fix firefox
-        try:
-            item = get_layout(item_id, recursion_depth=1)
-        except:
-            return
-
         item_children = item[2]
 
         if 'label' in item_props and item_props['label']:
@@ -396,15 +386,22 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
             shortcut = '+'.join(item_props['shortcut'][0])
             # logging.debug('shortcut', shortcut)
 
-        if len(item_children) == 0:
-            if new_path not in blacklist:
-                dbusmenu_item_dict[format_menuitem(new_path, shortcut)] = item_id
-        else:
+        if 'children-display' in item_props:
+            if 'canonical' in dbusmenu_object_path: # expand firefox
+                dbusmenu_object_iface.Event(item_id, "opened", "not used", 0)
+
+            if not item_children:
+                dbusmenu_object_iface.AboutToShow(item_id)
+                item_children = get_layout(item_id)[2]
+
             blacklist.append(new_path)
             for child in item_children:
-                expanse_all_menu_with_dbus(child, False, new_path)
+                explore_dbus_menu(child, new_path)
+        else:
+            if new_path not in blacklist:
+                dbusmenu_item_dict[format_menuitem(new_path, shortcut)] = item_id
 
-    expanse_all_menu_with_dbus(dbusmenu_root_item, True, "")
+    explore_dbus_menu(dbusmenu_root_item, "")
     menuKeys = dbusmenu_item_dict.keys()
 
     menu_result = get_menu(menuKeys)
