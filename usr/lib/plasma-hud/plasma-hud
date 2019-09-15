@@ -216,9 +216,7 @@ def get_menu(menuKeys):
     if not menuKeys:
         return ''
 
-    menu_string, *menu_items = menuKeys
-    for menu_item in menu_items:
-        menu_string += '\n' + menu_item
+    menu_string = '\n'.join(menuKeys)
 
     # Get the currently active font.
     font_name = 'Sans 10'
