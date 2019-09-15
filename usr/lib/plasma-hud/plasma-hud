@@ -568,6 +568,13 @@ def hud():
         else:
             return value
 
+    wm_class = get_prop_str('WM_CLASS')
+    if wm_class:
+        wm_class = wm_class.split('\x00')
+        # split creates an empty 3rd token after the second null \x00.
+        if len(wm_class) == 3:
+            wm_class = wm_class[0:2]
+
     gtk_bus_name = get_prop_str('_GTK_UNIQUE_BUS_NAME')
     gtk_menubar_object_path = get_prop_str('_GTK_MENUBAR_OBJECT_PATH')
     gtk_app_object_path = get_prop_str('_GTK_APPLICATION_OBJECT_PATH')
