@@ -345,7 +345,7 @@ def get_menu(menuKeys):
 """
   try_dbusmenu_interface
 """
-def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
+def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
     # --- Get Appmenu Registrar DBus interface
     session_bus = dbus.SessionBus()
 
@@ -424,7 +424,7 @@ def try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path):
 """
   try_gtk_interface
 """
-def try_gtk_interface(gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list):
+def try_gtk_interface(wm_class, gtk_bus_name, gtk_menu_object_path, gtk_actions_paths_list):
     session_bus = dbus.SessionBus()
     # --- Ask for menus over DBus --- Credit @1931186
     try:
@@ -606,12 +606,12 @@ def hud():
                                    gtk_menubar_object_path,
                                    gtk_app_object_path,
                                    gtk_unity_object_path]))
-        appmenu_success = try_gtk_interface(gtk_bus_name, gtk_menubar_object_path, gtk_actions_paths_list)
+        appmenu_success = try_gtk_interface(wm_class, gtk_bus_name, gtk_menubar_object_path, gtk_actions_paths_list)
     
     if not appmenu_success:
         if kde_appmenu_service_name and kde_appmenu_object_path:
             logging.debug('Trying KDE AppMenu interface')
-            appmenu_success = try_dbusmenu_interface(kde_appmenu_service_name, kde_appmenu_object_path)
+            appmenu_success = try_dbusmenu_interface(wm_class, kde_appmenu_service_name, kde_appmenu_object_path)
     
     if not appmenu_success:
         logging.debug('Giving up')
