@@ -574,6 +574,8 @@ def hud():
         # split creates an empty 3rd token after the second null \x00.
         if len(wm_class) == 3:
             wm_class = wm_class[0:2]
+    if not wm_class or len(wm_class) != 2:
+        wm_class = ['', '']
 
     gtk_bus_name = get_prop_str('_GTK_UNIQUE_BUS_NAME')
     gtk_menubar_object_path = get_prop_str('_GTK_MENUBAR_OBJECT_PATH')
@@ -584,6 +586,7 @@ def hud():
     kde_appmenu_object_path = get_prop_str('_KDE_NET_WM_APPMENU_OBJECT_PATH')
 
     logging.debug('Window id is : %s', window_id)
+    logging.debug('WM_CLASS: %s', str(wm_class))
     logging.debug('_GTK_UNIQUE_BUS_NAME: %s', gtk_bus_name)
     logging.debug('_GTK_MENUBAR_OBJECT_PATH: %s', gtk_menubar_object_path)
     logging.debug('_GTK_APPLICATION_OBJECT_PATH: %s', gtk_app_object_path)
