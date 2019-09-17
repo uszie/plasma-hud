@@ -206,6 +206,20 @@ class PlasmaHudConfig(KdeConfig):
         super().__init__(os.path.abspath(os.path.expanduser('~/.config/plasmahudrc')))
 
 
+### Logging / Tests
+def log_menu(wm_class, menuKeys):
+    from datetime import datetime
+    now = datetime.now()
+    logdir = os.path.expanduser("~/.config/plasmahud/logs")
+    os.makedirs(logdir, exist_ok=True)
+    filename = "{}-{}.log".format(wm_class[0], now.strftime("%Y-%m-%d__%H-%M-%S"))
+    filepath = os.path.join(logdir, filename)
+    menu_string = '\n'.join(menuKeys)
+    with open(filepath, "w") as fout:
+        fout.write(menu_string)
+
+
+
 ### Implementation
 def get_menu(menuKeys):
     """
@@ -402,6 +416,10 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
     explore_dbus_menu(dbusmenu_root_item, "")
     menuKeys = dbusmenu_item_dict.keys()
 
+    # --- Logging / Tests
+    # log_menu(wm_class, menuKeys)
+
+    # --- Show menu
     menu_result = get_menu(menuKeys)
 
     # --- Use dmenu result
@@ -524,6 +542,10 @@ def try_gtk_interface(wm_class, gtk_bus_name, gtk_menu_object_path, gtk_actions_
         logging.debug('gtk menubar has an empty menu')
         return False
 
+    # --- Logging / Tests
+    # log_menu(wm_class, menuKeys)
+
+    # --- Show menu
     menu_result = get_menu(menuKeys)
 
     # --- Use menu result
