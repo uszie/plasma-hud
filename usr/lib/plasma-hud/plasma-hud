@@ -221,16 +221,12 @@ def log_menu(wm_class, menuKeys):
 
 
 ### Implementation
-def get_menu(menuKeys):
+def init_rofi():
     """
-    Generate menu of available menu items.
+    Init rofi_procss so it starts capturing keystrokes while we slowly pipe in the dbus menu items.
     """
     global rofi_process, shortcut_fg_color
-
-    if not menuKeys:
-        return ''
-
-    menu_string = '\n'.join(menuKeys)
+    logging.debug("init_rofi.rofi_process.start: %s", rofi_process)
 
     # Get the currently active font.
     font_name = 'Sans 10'
@@ -298,7 +294,7 @@ def get_menu(menuKeys):
     height_dpi = get_dpi(screen.height(), screen.height_mm())
     dpi = scale * (width_dpi + height_dpi) / 2
 
-    logging.debug("get_menu.rofi_process:  %s", rofi_process)
+    logging.debug("init_rofi.rofi_process.pre: %s", rofi_process)
     rofi_process = subprocess.Popen(['rofi', '-dmenu',
         '-i', # Case insensitive filtering
         '-location', '1',
@@ -325,6 +321,28 @@ def get_menu(menuKeys):
         '-color-active', bg_color +", " + fg_color + ", " + bg_color + ", " + info_bg_color + ", " + info_fg_color,
         '-color-urgent', bg_color +", " + fg_color + ", " + bg_color + ", " + error_bg_color + ", " + error_fg_color],
         stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    logging.debug("init_rofi.rofi_process.post: %s", rofi_process)
+
+
+def get_menu(menuKeys):
+    """
+    Generate menu of available menu items.
+    """
+    global rofi_process, shortcut_fg_color
+
+    if not menuKeys:
+        logging.debug("get_menu() menuKeys is None or empty")
+        if rofi_process and rofi_process.poll() is None:
+            logging.debug("    terminating rofi_process: %s", rofi_process)
+            rofi_process.terminate()
+        return ''
+
+    menu_string = '\n'.join(menuKeys)
+
+    if not rofi_process and rofi_process.poll() is not None:
+        logging.debug("get_menu() rofi_process was terminated before menuKeys were piped")
+        return ''
+
     rofi_process.stdin.write(menu_string.encode('utf-8'))
     menu_result = rofi_process.communicate()[0].decode('utf8').rstrip()
     rofi_process.stdin.close()
@@ -347,6 +365,10 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
         logging.info('Unable to access dbusmenu items.')
         return False
 
+    # --- Valid menu, so init rofi process to capture keypresses.
+    init_rofi()
+
+    # --- Read menu
     def get_layout(parent_id = 0, recursion_depth = -1, property_names = ["label", "children-display"]):
         """Returns a layout as a list of items. Each item is an array of [item_id, item_props, item_children]."""
         revision, layout = dbusmenu_object_iface.GetLayout(parent_id, recursion_depth, property_names)
