@@ -331,30 +331,6 @@ def get_menu(menuKeys):
 
     return menu_result
 
-"""
-  try_appmenu_interface
-"""
-# def try_appmenu_interface(window_id):
-#     # --- Get Appmenu Registrar DBus interface
-#     session_bus = dbus.SessionBus()
-#     try:
-#         appmenu_registrar_object = session_bus.get_object('com.canonical.AppMenu.Registrar', '/com/canonical/AppMenu/Registrar')
-#         appmenu_registrar_object_iface = dbus.Interface(appmenu_registrar_object, 'com.canonical.AppMenu.Registrar')
-#     except dbus.exceptions.DBusException:
-#         logging.info('Unable to register with com.canonical.AppMenu.Registrar.')
-#         return False
-
-#     # --- Get dbusmenu object path
-#     try:
-#         dbusmenu_bus, dbusmenu_object_path = appmenu_registrar_object_iface.GetMenuForWindow(window_id)
-#         # terminate_appmenu_registrar()
-#     except dbus.exceptions.DBusException as e:
-#         logging.info('Unable to get dbusmenu object path.')
-#         logging.debug(e)
-#         return False
-
-#     return try_dbusmenu_interface(dbusmenu_bus, dbusmenu_object_path)
-
 
 """
   try_dbusmenu_interface
