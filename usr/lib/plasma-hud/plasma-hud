@@ -417,6 +417,7 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
 
 
 def hud():
+    logging.debug("\n")
     logging.debug("hud()")
 
     # Get Window properties and GTK MenuModel Bus name
