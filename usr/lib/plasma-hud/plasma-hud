@@ -302,6 +302,7 @@ def init_rofi():
     info_bg_color = plasmahudrc.get('Colors', 'InfoBackground', fallback=info_bg_color)
     info_fg_color = plasmahudrc.get('Colors', 'InfoForeground', fallback=info_fg_color)
     borders = plasmahudrc.get('Colors', 'Borders', fallback=borders)
+    shortcut_fg_color = plasmahudrc.get('Colors', 'ShortcutForeground', fallback=DEFAULT_SHORTCUT_FG_COLOR)
 
     def logConfig():
         logging.debug('matching: %s', str(matching))
@@ -312,9 +313,6 @@ def init_rofi():
         logging.debug('icon_theme: %s', str(icon_theme))
         logging.debug('show_shortcuts: %s', str(show_shortcuts))
         logging.debug('font_name: %s', str(font_name))
-
-    # TODO: Call format_shortcut/format_menuitem after reading the shortcut_fg_color from config.
-    # shortcut_fg_color = plasmahudrc.get('Colors', 'ShortcutForeground', fallback=DEFAULT_SHORTCUT_FG_COLOR)
 
     logging.debug('=== After ~/.config/plasmahudrc ===')
     logTheme()
