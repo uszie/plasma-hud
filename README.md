@@ -89,6 +89,13 @@ If you manally create `~/.config/plasmahudrc` you can change any of the followin
 [General]
 Matching=fuzzy
 
+[Icons]
+Enabled=true
+Theme=breeze-dark
+
+[Shortcuts]
+Enabled=true
+
 [Style]
 Font=Sans 10
 
