@@ -88,6 +88,9 @@ If you manally create `~/.config/plasmahudrc` you can change any of the followin
 ```
 [General]
 Matching=fuzzy
+Sort=true
+WaitForAllMenuItems=true
+Lines=20
 
 [Icons]
 Enabled=true
