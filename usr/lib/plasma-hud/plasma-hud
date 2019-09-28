@@ -289,7 +289,7 @@ def init_rofi():
     sort_items = str2bool(plasmahudrc.get('General', 'Sort', fallback='false'))
     num_lines = int(plasmahudrc.get('General', 'Lines', fallback='10'))
     wait_for_sync = str2bool(plasmahudrc.get('General', 'WaitForAllMenuItems', fallback='false'))
-    show_icons = str2bool(plasmahudrc.get('Icons', 'Enabled', fallback=show_icons))
+    show_icons = str2bool(plasmahudrc.get('Icons', 'Enabled', fallback=str(show_icons)))
     icon_theme = plasmahudrc.get('Icons', 'Theme', fallback=icon_theme)
     show_shortcuts = str2bool(plasmahudrc.get('Shortcuts', 'Enabled', fallback=str(show_shortcuts)))
     font_name = plasmahudrc.get('Style', 'Font', fallback=font_name)
