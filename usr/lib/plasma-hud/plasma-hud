@@ -271,10 +271,6 @@ def init_rofi():
     icon_theme = kdeglobals.get('Icons', 'Theme', fallback='breeze')
 
     def logTheme():
-        logging.debug('show_icons: %s', str(show_icons))
-        logging.debug('icon_theme: %s', str(icon_theme))
-        logging.debug('show_shortcuts: %s', str(show_shortcuts))
-        logging.debug('font_name: %s', str(font_name))
         logging.debug('bg_color: %s', str(bg_color))
         logging.debug('fg_color: %s', str(fg_color))
         logging.debug('borders: %s', str(borders))
@@ -290,6 +286,9 @@ def init_rofi():
 
     plasmahudrc = PlasmaHudConfig()
     matching = plasmahudrc.get('General', 'Matching', fallback='fuzzy')
+    sort_items = str2bool(plasmahudrc.get('General', 'Sort', fallback='false'))
+    num_lines = int(plasmahudrc.get('General', 'Lines', fallback='10'))
+    wait_for_sync = str2bool(plasmahudrc.get('General', 'WaitForAllMenuItems', fallback='false'))
     show_icons = str2bool(plasmahudrc.get('Icons', 'Enabled', fallback=show_icons))
     icon_theme = plasmahudrc.get('Icons', 'Theme', fallback=icon_theme)
     show_shortcuts = str2bool(plasmahudrc.get('Shortcuts', 'Enabled', fallback=str(show_shortcuts)))
@@ -304,11 +303,23 @@ def init_rofi():
     info_fg_color = plasmahudrc.get('Colors', 'InfoForeground', fallback=info_fg_color)
     borders = plasmahudrc.get('Colors', 'Borders', fallback=borders)
 
+    def logConfig():
+        logging.debug('matching: %s', str(matching))
+        logging.debug('sort_items: %s', str(sort_items))
+        logging.debug('num_lines: %s', str(num_lines))
+        logging.debug('wait_for_sync: %s', str(wait_for_sync))
+        logging.debug('show_icons: %s', str(show_icons))
+        logging.debug('icon_theme: %s', str(icon_theme))
+        logging.debug('show_shortcuts: %s', str(show_shortcuts))
+        logging.debug('font_name: %s', str(font_name))
+
     # TODO: Call format_shortcut/format_menuitem after reading the shortcut_fg_color from config.
     # shortcut_fg_color = plasmahudrc.get('Colors', 'ShortcutForeground', fallback=DEFAULT_SHORTCUT_FG_COLOR)
 
     logging.debug('=== After ~/.config/plasmahudrc ===')
     logTheme()
+    logConfig()
+    logging.debug('=== --------------------------- ===')
 
     # Calculate display DPI value
     screen = window.get_screen()
@@ -330,7 +341,9 @@ def init_rofi():
         '-location', '1',
         '-width', '100',
         '-p', 'HUD', # Text beside filter textfield
-        '-lines', '10',
+        '-lines', str(num_lines),
+        '-async-pre-read', str(num_lines),
+        '-sync' if wait_for_sync else '', # withhold display until menu entries are ready
         '-font', font_name,
         '-dpi', str(dpi),
         '-separator-style', 'none',
@@ -341,11 +354,10 @@ def init_rofi():
         '-icon-theme', icon_theme,
         # '-levenshtein-sort',
         '-sorting', 'fsf',
-        '-sort',
+        '-sort' if sort_items else '-no-sort',
         '-matching', matching,
         '-line-padding', '2',
         '-kb-cancel', 'Escape',
-        '-sync', # withhold display until menu entries are ready
         '-monitor', '-2', # show in the current application
         '-color-enabled',
         '-color-window', bg_color +", " + borders + ", " + borders,
@@ -357,26 +369,32 @@ def init_rofi():
     logging.debug("init_rofi.rofi_process.post: %s", rofi_process)
 
 
-def get_menu(menuKeys):
+def write_menuitem(menu_item):
+    global rofi_process
+
+    menu_string = menu_item + '\n'
+
+    # if not rofi_process and rofi_process.poll() is not None:
+    #     logging.debug("write_menuitem() rofi_process was terminated before all menu_items were piped")
+    #     return
+
+    # logging.debug('menu_string: %s', menu_string)
+    rofi_process.stdin.write(menu_string.encode('utf-8'))
+    rofi_process.stdin.flush()
+
+    # --- Test async
+    # time.sleep(0.05)
+
+def get_menu():
     """
     Generate menu of available menu items.
     """
     global rofi_process, shortcut_fg_color
 
-    if not menuKeys:
-        logging.debug("get_menu() menuKeys is None or empty")
-        if rofi_process and rofi_process.poll() is None:
-            logging.debug("    terminating rofi_process: %s", rofi_process)
-            rofi_process.terminate()
-        return ''
-
-    menu_string = '\n'.join(menuKeys)
-
     if not rofi_process and rofi_process.poll() is not None:
-        logging.debug("get_menu() rofi_process was terminated before menuKeys were piped")
+        logging.debug("get_menu() rofi_process was terminated before asking for menu_result")
         return ''
 
-    rofi_process.stdin.write(menu_string.encode('utf-8'))
     menu_result = rofi_process.communicate()[0].decode('utf8').rstrip()
     rofi_process.stdin.close()
 
@@ -399,7 +417,9 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
         return False
 
     # --- Valid menu, so init rofi process to capture keypresses.
+    logging.debug('init_rofi.before : %s', str(time.perf_counter()))
     init_rofi()
+    logging.debug('init_rofi.after  : %s', str(time.perf_counter()))
 
     # --- Read menu
     def get_layout(parent_id = 0, recursion_depth = -1, property_names = ["label", "children-display"]):
@@ -410,6 +430,7 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
     dbusmenu_root_item = get_layout()
     dbusmenu_label_dict = dict()
     dbusmenu_iconlabel_dict = dict()
+    logging.debug('get_layout.root  : %s', str(time.perf_counter()))
 
     #For excluding items which have no action
     blacklist = []
@@ -445,8 +466,16 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
                 item_children = get_layout(item_id)[2]
 
             blacklist.append(new_path)
+
+            logging.debug('get_layout.child : %s', str(time.perf_counter()))
+
+            # if not rofi_process and rofi_process.poll() is not None:
+            #     logging.debug("explore_dbus_menu(child) rofi_process was terminated before child menuitems were piped")
+            #     return
+
             for child in item_children:
-                explore_dbus_menu(child, new_path)
+                for child_entry in explore_dbus_menu(child, new_path):
+                    yield child_entry
         else:
             if new_path not in blacklist:
                 item_label = format_menuitem_label(new_path, shortcut)
@@ -457,16 +486,26 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
                 # the result.
                 item_entry = format_menuitem(item_label, icon_name) 
                 dbusmenu_iconlabel_dict[item_entry] = item_id
-                # logging.debug('item_entry: "%s"', str(item_entry))
+                # logging.debug('item_entry: #%s: "%s"', str(len(dbusmenu_iconlabel_dict)), str(item_entry))
 
-    explore_dbus_menu(dbusmenu_root_item, "")
-    menuKeys = dbusmenu_iconlabel_dict.keys()
+                yield item_entry
+
+
+    if not rofi_process and rofi_process.poll() is not None:
+        logging.debug("explore_dbus_menu(root) rofi_process was terminated before nested menuitems were piped")
+        return False
+
+    for item_entry in explore_dbus_menu(dbusmenu_root_item, ""):
+        write_menuitem(item_entry)
+
+    logging.debug('get_layout.nested: %s', str(time.perf_counter()))
 
     # --- Logging / Tests
+    # menuKeys = dbusmenu_iconlabel_dict.keys()
     # log_menu(wm_class, menuKeys)
 
     # --- Show menu
-    menu_result = get_menu(menuKeys)
+    menu_result = get_menu()
     logging.debug('menu_result: "%s"', str(menu_result))
 
     # --- Use dmenu result
@@ -489,7 +528,7 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
 
 def hud():
     logging.debug("\n")
-    logging.debug("hud()")
+    logging.debug("hud()            : %s", str(time.perf_counter()))
 
     # Get Window properties and GTK MenuModel Bus name
     ewmh = EWMH()
