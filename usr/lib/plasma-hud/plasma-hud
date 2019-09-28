@@ -35,6 +35,7 @@ DEFAULT_SHORTCUT_FG_COLOR = '#888888'
 ### Globals
 # plasmahudrc = None
 rofi_process = None
+show_icons = True
 show_shortcuts = False
 shortcut_fg_color = DEFAULT_SHORTCUT_FG_COLOR
 
@@ -139,14 +140,19 @@ def format_shortcut(text):
     text = '<span fgcolor="' + shortcut_fg_color + '" face="Sans Serif">' + text + '</span>'
     return text
 
-def format_menuitem(path, icon_name, shortcut):
+def format_menuitem_label(path, shortcut):
     result = format_path(path)
 
     if show_shortcuts and shortcut:
         shortcut = format_shortcut(shortcut)
         result += EMSPACE + shortcut
 
-    if icon_name:
+    return result
+
+def format_menuitem(formattedlabel, icon_name):
+    result = formattedlabel
+
+    if show_icons and icon_name:
         # Documented at:
         # https://github.com/davatorium/rofi/issues/840#issuecomment-410683206
         result += ' \x00icon\x1f' + icon_name
@@ -240,7 +246,7 @@ def init_rofi():
     """
     Init rofi_procss so it starts capturing keystrokes while we slowly pipe in the dbus menu items.
     """
-    global rofi_process, shortcut_fg_color, show_shortcuts
+    global rofi_process, shortcut_fg_color, show_icons, show_shortcuts
     logging.debug("init_rofi.rofi_process.start: %s", rofi_process)
 
     # Get the currently active font.
@@ -262,7 +268,6 @@ def init_rofi():
     # text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
 
     kdeglobals = KdeGlobalsConfig()
-    show_icons = True
     icon_theme = kdeglobals.get('Icons', 'Theme', fallback='breeze')
 
     def logTheme():
@@ -403,7 +408,8 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
         return layout
 
     dbusmenu_root_item = get_layout()
-    dbusmenu_item_dict = dict()
+    dbusmenu_label_dict = dict()
+    dbusmenu_iconlabel_dict = dict()
 
     #For excluding items which have no action
     blacklist = []
@@ -443,22 +449,29 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
                 explore_dbus_menu(child, new_path)
         else:
             if new_path not in blacklist:
-                item_entry = format_menuitem(new_path, icon_name, shortcut)
-                dbusmenu_item_dict[item_entry] = item_id
+                item_label = format_menuitem_label(new_path, shortcut)
+                dbusmenu_label_dict[item_label] = item_id
+
+                # Icon name is stripped from the menu_result. So we need
+                # 2 dicts, one for passing into rofi, and another to parse
+                # the result.
+                item_entry = format_menuitem(item_label, icon_name) 
+                dbusmenu_iconlabel_dict[item_entry] = item_id
+                # logging.debug('item_entry: "%s"', str(item_entry))
 
     explore_dbus_menu(dbusmenu_root_item, "")
-    menuKeys = dbusmenu_item_dict.keys()
+    menuKeys = dbusmenu_iconlabel_dict.keys()
 
     # --- Logging / Tests
     # log_menu(wm_class, menuKeys)
 
     # --- Show menu
     menu_result = get_menu(menuKeys)
-    logging.debug('menu_result: %s', str(menu_result))
+    logging.debug('menu_result: "%s"', str(menu_result))
 
     # --- Use dmenu result
-    if menu_result in dbusmenu_item_dict:
-        action = dbusmenu_item_dict[menu_result]
+    if menu_result in dbusmenu_label_dict:
+        action = dbusmenu_label_dict[menu_result]
         logging.debug('AppMenu Action : %s', str(action))
         dbusmenu_object_iface.Event(action, 'clicked', 0, 0)
 
