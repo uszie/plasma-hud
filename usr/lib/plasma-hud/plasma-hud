@@ -350,6 +350,8 @@ def init_rofi():
         '-hide-scrollbar',
         '-click-to-exit',
         '-markup-rows',
+        # '-display-columns', '1,2',
+        # '-display-column-separator', '\t',
         '-show-icons' if show_icons else '',
         '-icon-theme', icon_theme,
         # '-levenshtein-sort',
