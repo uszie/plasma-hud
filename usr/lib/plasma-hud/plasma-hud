@@ -454,6 +454,7 @@ def try_dbusmenu_interface(wm_class, dbusmenu_bus, dbusmenu_object_path):
 
     # --- Show menu
     menu_result = get_menu(menuKeys)
+    logging.debug('menu_result: %s', str(menu_result))
 
     # --- Use dmenu result
     if menu_result in dbusmenu_item_dict:
