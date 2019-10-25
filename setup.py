@@ -29,7 +29,7 @@ import DistUtilsExtra.command.build_extra
 import DistUtilsExtra.command.build_i18n
 import DistUtilsExtra.command.clean_i18n
 
-__VERSION__ = '18.12.1'
+__VERSION__ = '19.10.0'
 
 def datafilelist(installbase, sourcebase):
     datafileList = []
