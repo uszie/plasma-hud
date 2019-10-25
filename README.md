@@ -11,7 +11,8 @@ Heads-Up Display (HUD). `plasma-hud` was forked from `mate-hud` which was based 
   * https://github.com/ubuntu-mate/mate-hud
   * https://github.com/hardpixel/gnome-hud
 
-![](https://i.imgur.com/94nih11.png)
+![](https://i.imgur.com/M3YUONc.png)
+![](https://i.imgur.com/sE0i8IE.png)
 
 ## What is a HUD and why should I care?
 
@@ -113,7 +114,7 @@ ShortcutForeground=#888888
 
 * `[General] Matching=fuzzy` can be either `fuzzy` matching or `normal` matching where it matches a keyword exactly. See `man rofi | grep "\-matching" -A20` for more info.
 
-![](https://i.imgur.com/6ncDtWt.png)
+![](https://i.imgur.com/OrDieG2.png)
 
 ## Uninstall
 
