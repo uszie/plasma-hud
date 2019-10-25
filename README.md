@@ -102,6 +102,7 @@ Enabled=true
 
 [Style]
 Font=Sans 10
+Title=🞜
 
 [Colors]
 Background=#111111
