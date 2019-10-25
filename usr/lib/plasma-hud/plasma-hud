@@ -213,7 +213,7 @@ class KdeConfig(configparser.ConfigParser):
         if not self.has_option(section, option):
             self.set(section, option, value)
 
-    def save(self): 
+    def save(self):
         with open(self.filename, 'w') as fp:
             self.write(fp, space_around_delimiters=False)
 
@@ -292,6 +292,7 @@ def init_rofi():
     show_icons = str2bool(plasmahudrc.get('Icons', 'Enabled', fallback=str(show_icons)))
     icon_theme = plasmahudrc.get('Icons', 'Theme', fallback=icon_theme)
     show_shortcuts = str2bool(plasmahudrc.get('Shortcuts', 'Enabled', fallback=str(show_shortcuts)))
+    hud_title = plasmahudrc.get('Style', 'Title', fallback='HUD')
     font_name = plasmahudrc.get('Style', 'Font', fallback=font_name)
     bg_color = plasmahudrc.get('Colors', 'Background', fallback=bg_color)
     fg_color = plasmahudrc.get('Colors', 'Foreground', fallback=fg_color)
@@ -338,7 +339,7 @@ def init_rofi():
         '-i', # Case insensitive filtering
         '-location', '1',
         '-width', '100',
-        '-p', 'HUD', # Text beside filter textfield
+        '-p', hud_title, # Text beside filter textfield
         '-lines', str(num_lines),
         '-async-pre-read', str(num_lines),
         '-sync' if wait_for_sync else '', # withhold display until menu entries are ready
