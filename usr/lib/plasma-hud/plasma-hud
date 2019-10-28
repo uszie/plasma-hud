@@ -638,6 +638,8 @@ if __name__ == "__main__":
 
     check_rofi_features()
 
+    Gtk.init()
+
     DBusGMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
     name = dbus.service.BusName('com.github.zren.PlasmaHUD', session_bus)
