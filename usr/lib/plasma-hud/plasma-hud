@@ -16,7 +16,6 @@ import time
 import threading
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import Gio, GLib, Gtk, Gdk, GObject
-from packaging import version
 from Xlib import display, protocol, X, Xatom, error
 
 
@@ -248,19 +247,40 @@ def log_menu(wm_class, menuKeys):
 ### Init
 def check_rofi_features():
     global supports_icons, supports_shortcuts
-    # https://stackoverflow.com/questions/11887762/how-do-i-compare-version-numbers-in-python
-    p = subprocess.run(['rofi', '-version'], capture_output=True)
-    versionStr = p.stdout.strip()
-    m = re.match(b'^Version: ((\d+).(\d+).(\d+))$', versionStr)
-    if m:
-        versionStr = m.group(1).decode('utf-8')
-        rofiVersion = version.parse(versionStr)
-        supports_icons = rofiVersion >= version.parse('1.5.3')
-        supports_shortcuts = rofiVersion > version.parse('1.5.4')
-        logging.debug('rofiVersion: %s', str(rofiVersion))
-        logging.debug('supports_icons: %s', str(supports_icons))
-        logging.debug('supports_shortcuts: %s', str(supports_shortcuts))
 
+    # https://stackoverflow.com/questions/11887762/how-do-i-compare-version-numbers-in-python
+    try: 
+        from packaging import version
+        version_parse = version.parse
+    except:
+        # SetupTools isn't installed, use simplier version parsing.
+        logging.debug('setuptools isnt installed, using simplier version parsing.')
+        def version_parse(versionStr):
+            logging.debug("version_parse: %s", versionStr)
+            versionBytes = versionStr.encode('utf-8')
+            m = re.match(b'^(\d+).(\d+).(\d+)$', versionBytes)
+            if m:
+                major = int(m.group(1))
+                minor = int(m.group(2))
+                bugfix = int(m.group(3))
+                logging.debug("version: %s", (major, minor, bugfix))
+                return (major, minor, bugfix)
+            raise Exception("Error parsing version (%s)")
+
+    try:
+        p = subprocess.run(['rofi', '-version'], stdout=subprocess.PIPE)
+        versionStr = p.stdout.strip()
+        m = re.match(b'^Version: ((\d+).(\d+).(\d+))$', versionStr)
+        if m:
+            versionStr = m.group(1).decode('utf-8')
+            rofiVersion = version_parse(versionStr)
+            supports_icons = rofiVersion >= version_parse('1.5.3')
+            supports_shortcuts = rofiVersion > version_parse('1.5.4')
+            logging.debug('rofiVersion: %s', str(rofiVersion))
+            logging.debug('supports_icons: %s', str(supports_icons))
+            logging.debug('supports_shortcuts: %s', str(supports_shortcuts))
+    except Exception as e:
+        logging.warning("Error parsing version (%s) %s", versionStr, e)
 
 
 ### Implementation
