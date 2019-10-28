@@ -8,6 +8,7 @@ import dbus
 import dbus.service
 import logging
 import os
+import re
 import setproctitle
 import subprocess
 import sys
@@ -15,6 +16,7 @@ import time
 import threading
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import Gio, GLib, Gtk, Gdk, GObject
+from packaging import version
 from Xlib import display, protocol, X, Xatom, error
 
 
@@ -34,9 +36,11 @@ DEFAULT_SHORTCUT_FG_COLOR = '#888888'
 
 ### Globals
 # plasmahudrc = None
+supports_icons = False # Requires rofi 1.5.3
+supports_shortcuts = False # Requires rofi 1.5.5?
 rofi_process = None
 show_icons = True
-show_shortcuts = False
+show_shortcuts = True
 shortcut_fg_color = DEFAULT_SHORTCUT_FG_COLOR
 
 
@@ -241,6 +245,24 @@ def log_menu(wm_class, menuKeys):
 
 
 
+### Init
+def check_rofi_features():
+    global supports_icons, supports_shortcuts
+    # https://stackoverflow.com/questions/11887762/how-do-i-compare-version-numbers-in-python
+    p = subprocess.run(['rofi', '-version'], capture_output=True)
+    versionStr = p.stdout.strip()
+    m = re.match(b'^Version: ((\d+).(\d+).(\d+))$', versionStr)
+    if m:
+        versionStr = m.group(1).decode('utf-8')
+        rofiVersion = version.parse(versionStr)
+        supports_icons = rofiVersion >= version.parse('1.5.3')
+        supports_shortcuts = rofiVersion > version.parse('1.5.4')
+        logging.debug('rofiVersion: %s', str(rofiVersion))
+        logging.debug('supports_icons: %s', str(supports_icons))
+        logging.debug('supports_shortcuts: %s', str(supports_shortcuts))
+
+
+
 ### Implementation
 def init_rofi():
     """
@@ -319,6 +341,10 @@ def init_rofi():
     logTheme()
     logConfig()
     logging.debug('=== --------------------------- ===')
+
+    # Check if rofi supports certain features
+    show_icons = supports_icons and show_icons
+    show_shortcuts = supports_shortcuts and show_shortcuts
 
     # Calculate display DPI value
     screen = window.get_screen()
@@ -609,6 +635,8 @@ class PlasmaHUD(dbus.service.Object):
 if __name__ == "__main__":
     setproctitle.setproctitle('plasma-hud')
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+
+    check_rofi_features()
 
     DBusGMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
