@@ -102,7 +102,7 @@ Enabled=true
 
 [Style]
 Font=Sans 10
-Title=🞜
+Title=::
 
 [Colors]
 Background=#111111
@@ -114,6 +114,8 @@ ShortcutForeground=#888888
 ```
 
 * `[General] Matching=fuzzy` can be either `fuzzy` matching or `normal` matching where it matches a keyword exactly. See `man rofi | grep "\-matching" -A20` for more info.
+
+* `[Style] Title=::` will change the `HUD:` prompt text to `:::` which is roughly the width of an icon.
 
 ![](https://i.imgur.com/OrDieG2.png)
 
