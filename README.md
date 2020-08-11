@@ -5,7 +5,7 @@ Provides a way to run menubar commands through
 Heads-Up Display (HUD). `plasma-hud` was forked from [`mate-hud`](https://github.com/ubuntu-mate/mate-hud) which was based on
 [`i3-hud-menu`](https://github.com/RafaelBocquet/i3-hud-menu). There's also a [`gnome-hud`](https://github.com/hardpixel/gnome-hud).
 
-If you are interested in Unity's other feature, locally integrated menus in window titlebars, then you may want to check out the [Material KWin decoration/theme](https://github.com/Zren/material-decoration) which has that feature.
+If you are interested in Unity's other feature, locally integrated menus in window titlebars, then you may want to check out the [Material KWin decoration](https://github.com/Zren/material-decoration) which has that feature.
 
 ![](https://i.imgur.com/M3YUONc.png)
 ![](https://i.imgur.com/sE0i8IE.png)
