@@ -33,8 +33,8 @@ Or use `unity-gtk2-module unity-gtk3-module` for Gtk2 / Gtk3.
 ### pacman (Arch)
 
 ```
-pacman -S rofi python python-dbus python-setproctitle python-xlib gobject-introspection
-pacman -S appmenu-gtk-module appmenu-qt4
+pacman -S rofi python python-dbus python-setproctitle python-xlib python-gobject gobject-introspection
+pacman -S appmenu-gtk-module
 ```
 
 ## Manual Setup
@@ -62,7 +62,7 @@ sudo cp etc/xdg/autostart/plasma-hud.desktop /etc/xdg/autostart/
 /usr/lib/plasma-hud/plasma-hud
 ```
 
-* Run the following commands to bind the `Alt` keys.
+* Run the following commands to bind the `Alt` keys. For Arch users, you will need `qt5-tools` installed to run `qdbus`.
 
 ```
 kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt "com.github.zren.PlasmaHUD,/PlasmaHUD,com.github.zren.PlasmaHUD,toggleHUD"
