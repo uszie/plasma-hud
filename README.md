@@ -1,7 +1,7 @@
 # plasma-hud
 
 Provides a way to run menubar commands through
-[rofi](https://davedavenport.github.io/rofi/), much like the Unity 7
+[`rofi`](https://github.com/davatorium/rofi), much like the Unity 7
 Heads-Up Display (HUD). `plasma-hud` was forked from [`mate-hud`](https://github.com/ubuntu-mate/mate-hud) which was based on
 [`i3-hud-menu`](https://github.com/RafaelBocquet/i3-hud-menu). There's also a [`gnome-hud`](https://github.com/hardpixel/gnome-hud).
 
