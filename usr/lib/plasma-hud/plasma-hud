@@ -28,6 +28,7 @@ EMSPACE = '\u2003'
 PATHARROW = '\u00BB'
 # PATHSEPERATOR = NOBREAKSPACE + NOBREAKSPACE + PATHARROW + NOBREAKSPACE + NOBREAKSPACE
 PATHSEPERATOR = EMSPACE + PATHARROW + EMSPACE
+DBUSMENU_PATTERN = re.compile('^DBusMenu(\w+)(' + re.escape(PATHSEPERATOR) + ')') # JetBrains IDE Workaround (Issue #34)
 
 DEFAULT_SHORTCUT_FG_COLOR = '#888888'
 
@@ -99,6 +100,15 @@ def format_path(path):
     result = result.replace('Root' + PATHSEPERATOR, '')
     result = result.replace('Label Empty' + PATHSEPERATOR, '')
     result = result.replace('_', '')
+
+    # JetBrains IDE Workaround (Issue #34)
+    m = DBUSMENU_PATTERN.match(result)
+    if m:
+        logging.debug("path: %s", path)
+        logging.debug("befo: %s", result)
+        result = DBUSMENU_PATTERN.sub(r'\1\2', result) # Remove 'DBusMenu' prefix from 'DBusMenuFile'
+        logging.debug("afte: %s", result)
+
     # return result.replace(PATHARROW, u'\u0020\u0020\u00BB\u0020\u0020')
     return result
 
