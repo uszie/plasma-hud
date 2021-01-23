@@ -19,9 +19,15 @@ recall if preferences sits under File, Edit or Tools on your favourite
 browser, you can just search for it rather than hunting through the
 menus.
 
-## Dependencies
+## Install via Package Manager
 
-### apt (Kubuntu / KDE Neon)
+* AUR: https://aur.archlinux.org/packages/plasma-hud-git/
+
+## Install via GitHub
+
+### Dependencies
+
+#### apt (Kubuntu / KDE Neon)
 
 ```
 sudo apt install rofi python3 python3-dbus python3-setproctitle python3-xlib gir1.2-gtk-3.0
@@ -30,14 +36,14 @@ sudo apt install appmenu-gtk2-module appmenu-gtk3-module # Gtk2 / Gtk3
 ```
 Or use `unity-gtk2-module unity-gtk3-module` for Gtk2 / Gtk3.
 
-### pacman (Arch)
+#### pacman (Arch)
 
 ```
 pacman -S rofi python python-dbus python-setproctitle python-xlib python-gobject gobject-introspection
 pacman -S appmenu-gtk-module
 ```
 
-## Manual Setup
+### Manual Install
 
 * Either use the Global Menu widget, or add the App Menu button in to the titlebar.
 * Download `plasma-hud`
@@ -78,7 +84,23 @@ qdbus org.kde.KWin /KWin reconfigure
     * Action > Function: `toggleHUD`
     * Action > Arguments: Leave it empty
 
-### Settings
+### Manual Uninstall
+
+* Run the following commands to unbind the `Alt` keys.
+
+```
+kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt ""
+qdbus org.kde.KWin /KWin reconfigure
+```
+
+* Uninstall files
+
+```
+sudo rm /usr/lib/plasma-hud/plasma-hud
+sudo rm /etc/xdg/autostart/plasma-hud.desktop
+```
+
+## Settings
 
 If you manally create `~/.config/plasmahudrc` you can change any of the following settings.
 
@@ -113,19 +135,3 @@ ShortcutForeground=#888888
 * `[Style] Title=::` will change the `HUD:` prompt text to `:::` which is roughly the width of an icon.
 
 ![](https://i.imgur.com/OrDieG2.png)
-
-## Uninstall
-
-* Run the following commands to unbind the `Alt` keys.
-
-```
-kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt ""
-qdbus org.kde.KWin /KWin reconfigure
-```
-
-* Uninstall files
-
-```
-sudo rm /usr/lib/plasma-hud/plasma-hud
-sudo rm /etc/xdg/autostart/plasma-hud.desktop
-```
