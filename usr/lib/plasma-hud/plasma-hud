@@ -312,7 +312,7 @@ def init_rofi():
     try:
         kdeglobals = KdeGlobalsConfig()
         icon_theme = kdeglobals.get('Icons', 'Theme', fallback='breeze')
-    except configparser.ParsingError as e:
+    except configparser.Error as e:
         logging.exception('Could not read Icon Theme from ~/.config/kdeglobals')
         icon_theme = 'breeze'
 
