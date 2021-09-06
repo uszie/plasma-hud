@@ -296,7 +296,12 @@ def check_rofi_features():
         logging.warning("Error parsing version (%s) %s", versionStr, e)
 
 
-### Implementation
+# replace last occurence of old with new
+def rreplace(string, old, new):
+    return (string[::-1].replace(old[::-1], new[::-1], 1))[::-1]
+
+
+# Implementation
 def init_rofi():
     """
     Init rofi_procss so it starts capturing keystrokes while we slowly pipe in the dbus menu items.
@@ -325,6 +330,9 @@ def init_rofi():
     try:
         kdeglobals = KdeGlobalsConfig()
         icon_theme = kdeglobals.get('Icons', 'Theme', fallback='breeze')
+        kde_font = kdeglobals.get('General', 'font',
+                                  fallback=rreplace(font_name, ' ', ',')).split(',')
+        font_name = kde_font[0] + ' ' + kde_font[1]
     except configparser.Error as e:
         logging.exception('Could not read Icon Theme from ~/.config/kdeglobals')
         icon_theme = 'breeze'
