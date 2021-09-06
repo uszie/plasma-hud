@@ -327,12 +327,26 @@ def init_rofi():
     info_fg_color = rgba_to_hex(style_context.lookup_color('info_fg_color')[1])
     # text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
 
+    def isPlatformWayland():
+        display = Gdk.Display.get_default()
+        if 'GdkWaylandDisplay' in str(type(display)):
+            return True
+        return False
+
+    kde_force_dpi = None
     try:
         kdeglobals = KdeGlobalsConfig()
         icon_theme = kdeglobals.get('Icons', 'Theme', fallback='breeze')
         kde_font = kdeglobals.get('General', 'font',
                                   fallback=rreplace(font_name, ' ', ',')).split(',')
         font_name = kde_font[0] + ' ' + kde_font[1]
+
+        kcmfonts = KdeConfig('kcmfonts')
+        if isPlatformWayland():
+            kde_force_dpi = kcmfonts.get('General', 'forceFontDPIWayland', fallback=kde_force_dpi)
+        else:
+            kde_force_dpi = kcmfonts.get('General', 'forceFontDPI', fallback=kde_force_dpi)
+
     except configparser.Error as e:
         logging.exception('Could not read Icon Theme from ~/.config/kdeglobals')
         icon_theme = 'breeze'
@@ -392,18 +406,20 @@ def init_rofi():
     show_shortcuts = supports_shortcuts and show_shortcuts
 
     # Calculate display DPI value
-    screen = window.get_screen()
-    scale = window.get_scale_factor()
+    dpi = kde_force_dpi
+    if not dpi:
+        screen = window.get_screen()
+        scale = window.get_scale_factor()
 
-    def get_dpi(pixels, mm):
-       if mm >= 1:
-          return scale * pixels / (mm / 25.4)
-       else:
-          return 0
+        def get_dpi(pixels, mm):
+            if mm >= 1:
+                return scale * pixels / (mm / 25.4)
+            else:
+                return 0
 
-    width_dpi = get_dpi(screen.width(), screen.width_mm())
-    height_dpi = get_dpi(screen.height(), screen.height_mm())
-    dpi = scale * (width_dpi + height_dpi) / 2
+        width_dpi = get_dpi(screen.width(), screen.width_mm())
+        height_dpi = get_dpi(screen.height(), screen.height_mm())
+        dpi = scale * (width_dpi + height_dpi) / 2
 
     logging.debug("init_rofi.rofi_process.pre: %s", rofi_process)
     rofi_process = subprocess.Popen(['rofi', '-dmenu',
