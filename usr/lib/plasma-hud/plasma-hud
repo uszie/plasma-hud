@@ -191,13 +191,26 @@ def str2bool(v):
 class KdeConfig(configparser.ConfigParser):
     def __init__(self, filename):
         super().__init__()
+        # Use all possible valid locations for a config file
+        filenames = []
+        xdg_config_dirs = os.getenv('XDG_CONFIG_DIRS')
+        if xdg_config_dirs and xdg_config_dirs is not None:
+            xdg_config_dirs = xdg_config_dirs.split(':')
+            # ConfigParser reads all files for a specific key value
+            # The last value found is used
+            # XDG_CONFIG_DIRS starts with the high priorty directories,
+            # so it needs to be reversed
+            xdg_config_dirs.reverse()
+            filenames = [s + '/' + filename for s in xdg_config_dirs]
+
+        filenames.append(os.path.abspath(os.path.expanduser('~/.config/' + filename)))
 
         # Keep case sensitive keys
         # http://stackoverflow.com/questions/19359556/configparser-reads-capital-keys-and-make-them-lower-case
         self.optionxform = str
 
-        self.filename = filename
-        self.read(self.filename)
+        self.filenames = filenames
+        self.read(self.filenames)
 
     def set(self, section, option, value):
         if not self.has_section(section):
@@ -217,17 +230,18 @@ class KdeConfig(configparser.ConfigParser):
             self.set(section, option, value)
 
     def save(self):
-        with open(self.filename, 'w') as fp:
+        with open(self.filenames[-1], 'w') as fp:
             self.write(fp, space_around_delimiters=False)
+
 
 class PlasmaHudConfig(KdeConfig):
     def __init__(self):
-        super().__init__(os.path.abspath(os.path.expanduser('~/.config/plasmahudrc')))
+        super().__init__('plasmahudrc')
+
 
 class KdeGlobalsConfig(KdeConfig):
     def __init__(self):
-        super().__init__(os.path.abspath(os.path.expanduser('~/.config/kdeglobals')))
-
+        super().__init__('kdeglobals')
 
 
 ### Logging / Tests
@@ -241,7 +255,6 @@ def log_menu(wm_class, menuKeys):
     menu_string = '\n'.join(menuKeys)
     with open(filepath, "w") as fout:
         fout.write(menu_string)
-
 
 
 ### Init
