@@ -120,6 +120,12 @@ Enabled=true
 [Style]
 Font=Sans 10
 Title=::
+Theme=breeze
+# place any normal rofi theme in the folder /usr/share/plasma-hud
+# The Theme argument must be the same as the theme filename without the .rasi extension.
+# At runtime plasma-hud will inject the colors of the current desktop theme into the rasi theme.
+# Possible injection values are `<BACKGROUND>`, `<FOREGROUND>`, `<BORDERS>`,
+# `<VIEW_BACKGROUND>`, `<DECORATION_FOCUS>` and `<DECORATION_FOCUS_INACTIVE>`.
 
 [Colors]
 Background=#111111

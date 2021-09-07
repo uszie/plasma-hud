@@ -301,6 +301,38 @@ def rreplace(string, old, new):
     return (string[::-1].replace(old[::-1], new[::-1], 1))[::-1]
 
 
+def create_rofi_theme(theme_name, background, foreground, content_view_bg,
+                      border, focus, focus_inactive, font):
+    filename = '/usr/share/plasma-hud/' + theme_name + '.rasi'
+
+    try:
+        with open(filename) as file:
+            contents = file.read()
+            if not contents or contents is None:
+                return None
+    except (FileNotFoundError, IOError) as e:
+        logging.exception("Could not open and read rofi theme file template %s", e)
+        return None
+
+    contents = contents.replace('<BACKGROUND>', background)
+    contents = contents.replace('<FOREGROUND>', foreground)
+    contents = contents.replace('<VIEW_BACKGROUND>', content_view_bg)
+    contents = contents.replace('<BORDERS>', border)
+    contents = contents.replace('<DECORATION_FOCUS>', focus)
+    contents = contents.replace('<DECORATION_FOCUS_INACTIVE>', focus_inactive)
+    contents = contents.replace('<FONT>', '\"' + font + '\"')
+
+    try:
+        path = os.path.expanduser('~/.cache/plasma-hud')
+        os.makedirs(path, exist_ok=True)
+        with open(path + '/theme.rasi', 'w') as tmp:
+            tmp.write(contents)
+            return tmp.name
+    except (FileNotFoundError, IOError) as e:
+        logging.exception("Could not create and write rofi theme file %s", e)
+        return None
+
+
 # Implementation
 def init_rofi():
     """
@@ -326,6 +358,11 @@ def init_rofi():
     info_bg_color = rgba_to_hex(style_context.lookup_color('info_bg_color')[1])
     info_fg_color = rgba_to_hex(style_context.lookup_color('info_fg_color')[1])
     # text_color = rgba_to_hex(style_context.lookup_color('theme_text_color')[1])
+    focus = get_color(style_context, 'theme_button_decoration_focus_breeze', selected_bg_color)
+    focus_insensitive = get_color(style_context,
+                                  'theme_button_decoration_focus_insensitive_breeze',
+                                  selected_bg_color)
+    content_view_bg = get_color(style_context, 'content_view_bg', bg_color)
 
     def isPlatformWayland():
         display = Gdk.Display.get_default()
@@ -385,6 +422,15 @@ def init_rofi():
     info_fg_color = plasmahudrc.get('Colors', 'InfoForeground', fallback=info_fg_color)
     borders = plasmahudrc.get('Colors', 'Borders', fallback=borders)
     shortcut_fg_color = plasmahudrc.get('Colors', 'ShortcutForeground', fallback=DEFAULT_SHORTCUT_FG_COLOR)
+    focus = plasmahudrc.get('Colors', 'DecorationFocus', fallback=focus)
+    focus_insensitive = plasmahudrc.get('Colors', 'DecorationFocusInactive', fallback=focus_insensitive)
+    content_view_bg = plasmahudrc.get('Colors', 'ViewBackground', fallback=content_view_bg)
+    theme_name = plasmahudrc.get('Style', 'Theme', fallback='breeze')
+
+    theme_file = ''
+    if theme_name:
+        theme_file = create_rofi_theme(theme_name, bg_color, fg_color, content_view_bg, borders,
+                                       focus, focus_insensitive, font_name)
 
     def logConfig():
         logging.debug('matching: %s', str(matching))
@@ -452,6 +498,8 @@ def init_rofi():
         '-color-normal', bg_color +", " + fg_color + ", " + bg_color + ", " + selected_bg_color + ", " + selected_fg_color,
         '-color-active', bg_color +", " + fg_color + ", " + bg_color + ", " + info_bg_color + ", " + info_fg_color,
         '-color-urgent', bg_color +", " + fg_color + ", " + bg_color + ", " + error_bg_color + ", " + error_fg_color,
+        '-theme' if theme_file else '',
+        theme_file if theme_file else '',
         ],
         stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     logging.debug("init_rofi.rofi_process.post: %s", rofi_process)

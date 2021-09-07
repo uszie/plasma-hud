@@ -1,4 +1,6 @@
 build/*
+.kdev4/
+*.kdev4
 __pycache__
 plasma-hud.cflags
 plasma-hud.cxxflags
