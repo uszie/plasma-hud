@@ -283,7 +283,7 @@ def check_rofi_features():
     try:
         p = subprocess.run(['rofi', '-version'], stdout=subprocess.PIPE)
         versionStr = p.stdout.strip()
-        m = re.match(b'^Version: ((\d+).(\d+).(\d+))$', versionStr)
+        m = re.match(b'^Version: ((\d+).(\d+).(\d+))(-.*|$)', versionStr)
         if m:
             versionStr = m.group(1).decode('utf-8')
             rofiVersion = version_parse(versionStr)
