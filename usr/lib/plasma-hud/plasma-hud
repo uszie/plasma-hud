@@ -3,6 +3,8 @@
 import gi
 gi.require_version("Gtk", "3.0")
 
+import signal
+import json
 import configparser
 import dbus
 import dbus.service
@@ -41,8 +43,8 @@ rofi_process = None
 show_icons = True
 show_shortcuts = True
 shortcut_fg_color = DEFAULT_SHORTCUT_FG_COLOR
-
-
+windowTracker = None
+plasmaHUD = None
 
 ### Classes / Util Functions
 class EWMH:
@@ -64,6 +66,13 @@ class EWMH:
             return None
 
         return self._createWindow(active_window[0])
+
+    def getProperty(self, _type, win=None):
+        value = self._getProperty(_type, win)
+        if isinstance(value, bytes):
+            return value.decode('utf8')
+        else:
+            return value
 
     def _getProperty(self, _type, win=None):
         if not win:
@@ -364,12 +373,6 @@ def init_rofi():
                                   selected_bg_color)
     content_view_bg = get_color(style_context, 'content_view_bg', bg_color)
 
-    def isPlatformWayland():
-        display = Gdk.Display.get_default()
-        if 'GdkWaylandDisplay' in str(type(display)):
-            return True
-        return False
-
     kde_force_dpi = None
     try:
         kdeglobals = KdeGlobalsConfig()
@@ -379,7 +382,7 @@ def init_rofi():
         font_name = kde_font[0] + ' ' + kde_font[1]
 
         kcmfonts = KdeConfig('kcmfonts')
-        if isPlatformWayland():
+        if windowTracker.isPlatformWayland:
             kde_force_dpi = kcmfonts.get('General', 'forceFontDPIWayland', fallback=kde_force_dpi)
         else:
             kde_force_dpi = kcmfonts.get('General', 'forceFontDPI', fallback=kde_force_dpi)
@@ -469,6 +472,7 @@ def init_rofi():
 
     logging.debug("init_rofi.rofi_process.pre: %s", rofi_process)
     rofi_process = subprocess.Popen(['rofi', '-dmenu',
+        '-normal-window' if windowTracker.isPlatformWayland else '',
         '-i', # Case insensitive filtering
         '-location', '1',
         '-width', '100',
@@ -666,65 +670,36 @@ def hud():
     logging.debug("\n")
     logging.debug("hud()            : %s", str(time.perf_counter()))
 
-    # Get Window properties and GTK MenuModel Bus name
-    ewmh = EWMH()
-    win = ewmh.getActiveWindow()
-    if win is None:
-        logging.debug('ewmh.getActiveWindow returned None, giving up')
+    activeWindow = windowTracker.getActiveWindow()
+    if not activeWindow:
+        logging.debug('hud: windowTracker.getActiveWindow, could not determine active window')
         return
-    window_id = hex(ewmh._getProperty('_NET_ACTIVE_WINDOW')[0])
 
-    def get_prop_str(propKey):
-        value = ewmh._getProperty(propKey, win)
-        # print('get_prop_str', propKey, value)
-        if isinstance(value, bytes):
-            return value.decode('utf8')
-        else:
-            return value
+    logging.debug("hud: active window = %s", activeWindow)
 
-    wm_class = get_prop_str('WM_CLASS')
-    if wm_class:
-        wm_class = wm_class.split('\x00')
-        # split creates an empty 3rd token after the second null \x00.
-        if len(wm_class) == 3:
-            wm_class = wm_class[0:2]
-    if not wm_class or len(wm_class) != 2:
-        wm_class = ['', '']
+    wm_class = [
+        activeWindow['appName'],
+        activeWindow['genericName']
+    ]
 
-    gtk_bus_name = get_prop_str('_GTK_UNIQUE_BUS_NAME')
-    gtk_menubar_object_path = get_prop_str('_GTK_MENUBAR_OBJECT_PATH')
-    gtk_app_object_path = get_prop_str('_GTK_APPLICATION_OBJECT_PATH')
-    gtk_win_object_path = get_prop_str('_GTK_WINDOW_OBJECT_PATH')
-    gtk_unity_object_path = get_prop_str('_UNITY_OBJECT_PATH')
-    kde_appmenu_service_name = get_prop_str('_KDE_NET_WM_APPMENU_SERVICE_NAME')
-    kde_appmenu_object_path = get_prop_str('_KDE_NET_WM_APPMENU_OBJECT_PATH')
+    try_dbusmenu_interface(wm_class,
+                           activeWindow['applicationMenuServiceName'],
+                           activeWindow['applicationMenuObjectPath'])
 
-    logging.debug('Window id is : %s', window_id)
-    logging.debug('WM_CLASS: %s', str(wm_class))
-    logging.debug('_GTK_UNIQUE_BUS_NAME: %s', gtk_bus_name)
-    logging.debug('_GTK_MENUBAR_OBJECT_PATH: %s', gtk_menubar_object_path)
-    logging.debug('_GTK_APPLICATION_OBJECT_PATH: %s', gtk_app_object_path)
-    logging.debug('_GTK_WINDOW_OBJECT_PATH: %s', gtk_win_object_path)
-    logging.debug('_UNITY_OBJECT_PATH: %s', gtk_unity_object_path)
-    logging.debug('_KDE_NET_WM_APPMENU_SERVICE_NAME: %s', kde_appmenu_service_name)
-    logging.debug('_KDE_NET_WM_APPMENU_OBJECT_PATH: %s', kde_appmenu_object_path)
-
-    appmenu_success = False
-
-    if not appmenu_success:
-        if kde_appmenu_service_name and kde_appmenu_object_path:
-            logging.debug('Trying KDE AppMenu interface')
-            appmenu_success = try_dbusmenu_interface(wm_class, kde_appmenu_service_name, kde_appmenu_object_path)
-    
-    if not appmenu_success:
-        logging.debug('Giving up')
 
 def openHUD():
     threading.Thread(target=hud).start()
 
+
+BUS_NAME = 'com.github.zren.PlasmaHUD'
+BUS_PATH = '/PlasmaHUD'
+
+
 class PlasmaHUD(dbus.service.Object):
-    def __init__(self, conn, object_path='/PlasmaHUD'):
-        dbus.service.Object.__init__(self, conn, object_path)
+    def __init__(self):
+        self.activeWindow = None
+        bus_name = dbus.service.BusName(BUS_NAME, bus=dbus.SessionBus())
+        dbus.service.Object.__init__(self, bus_name, BUS_PATH)
 
     @dbus.service.method('com.github.zren.PlasmaHUD')
     def toggleHUD(self):
@@ -737,6 +712,102 @@ class PlasmaHUD(dbus.service.Object):
             logging.debug("toggleHUD.openHUD")
             openHUD()
 
+    @dbus.service.method('com.github.zren.PlasmaHUD', in_signature='a{ss}', sender_keyword='sender')
+    def setActiveWindow(self, windowInfo, sender):
+        if windowInfo is None:
+            return
+
+        plainJson = json.dumps(windowInfo, indent=2)
+        activeWindow = json.loads(plainJson)
+        for k, v in activeWindow.items():
+            if v == 'null':
+                activeWindow[k] = None
+            elif ';' in v:
+                activeWindow[k] = v.replace(';', ',')
+            
+        self.activeWindow = activeWindow
+        logging.debug("PlasmaHUD: received active window = %s", self.activeWindow)
+
+
+class WindowTracker():
+    def __init__(self):
+        display = Gdk.Display.get_default()
+        if 'GdkWaylandDisplay' in str(type(display)):
+            self.isPlatformWayland = True
+            self.__HUDHelper = KWinPlasmaHUDHelper()
+        else:
+            self.isPlatformWayland = False
+            self.__ewmh = EWMH()
+
+    def getActiveWindow(self):
+        if self.isPlatformWayland:
+            return plasmaHUD.activeWindow
+        else:
+            window = self.__ewmh.getActiveWindow()
+            if window is None:
+                logging.debug('ewmh.getActiveWindow returned None, giving up')
+                return None
+
+            winId = self.__ewmh.getProperty('_NET_ACTIVE_WINDOW')[0]
+            title = self.__ewmh.getProperty('_NET_WM_NAME', window)
+            appPid = self.__ewmh.getProperty('_NET_WM_PID', window)[0]
+            wm_class = self.__ewmh.getProperty('WM_CLASS', window)
+            if wm_class:
+                wm_class = wm_class.split('\x00')
+                # split creates an empty 3rd token after the second null \x00.
+                if len(wm_class) == 3:
+                    wm_class = wm_class[0:2]
+            if not wm_class or len(wm_class) != 2:
+                wm_class = ['', '']
+
+            serviceName = self.__ewmh.getProperty('_KDE_NET_WM_APPMENU_SERVICE_NAME', window)
+            objectPath = self.__ewmh.getProperty('_KDE_NET_WM_APPMENU_OBJECT_PATH', window)
+
+            return {
+                'winId': winId,
+                'title': title,
+                'appPid': appPid,
+                'appName': wm_class[0],
+                'genericName': wm_class[1],
+                'applicationMenuServiceName': serviceName,
+                'applicationMenuObjectPath': objectPath
+            }
+
+
+SCRIPT_PATH = '/usr/share/plasma-hud/kwin-plasma-hud-helper.js'
+
+
+class KWinPlasmaHUDHelper():
+    def __init__(self):
+        bus = dbus.SessionBus()
+        dbusObject = bus.get_object('org.kde.KWin', '/Scripting')
+        self.dbusObjectIface = dbus.Interface(dbusObject, 'org.kde.kwin.Scripting')
+
+        if self.__isScriptLoaded():
+            self.__unloadScript()
+        self.__loadScript()
+        self.__startScript()
+
+    def __del__(self):
+        try:
+            self.__unloadScript()
+        except dbus.exceptions.DBusException as e:
+            logging.debug("Could not connect to kwin to unload script, \
+                kwin is probably restarted %s", e)
+
+    def __loadScript(self):
+        logging.debug("KWinPlasmaHUDHelper.__loadScript")        
+        return self.dbusObjectIface.loadScript(SCRIPT_PATH)
+
+    def __unloadScript(self):
+        logging.debug("KWinPlasmaHUDHelper.__unloadScript")
+        return self.dbusObjectIface.unloadScript(SCRIPT_PATH)
+
+    def __isScriptLoaded(self):
+        return self.dbusObjectIface.isScriptLoaded(SCRIPT_PATH)
+
+    def __startScript(self):
+        return self.dbusObjectIface.start()
 
 # kwriteconfig5 --file ~/.config/kwinrc --group ModifierOnlyShortcuts --key Alt "com.github.zren.PlasmaHUD,/PlasmaHUD,com.github.zren.PlasmaHUD,toggleHUD"
 # qdbus org.kde.KWin /KWin reconfigure
@@ -750,11 +821,36 @@ if __name__ == "__main__":
     Gtk.init()
 
     DBusGMainLoop(set_as_default=True)
-    session_bus = dbus.SessionBus()
-    name = dbus.service.BusName('com.github.zren.PlasmaHUD', session_bus)
-    obj = PlasmaHUD(session_bus)
+
+    plasmaHUD = PlasmaHUD()
 
     try:
-        GLib.MainLoop().run()
+        windowTracker = WindowTracker()
+    except dbus.exceptions.DBusException as e:
+        logging.exception("Could not connect to kwin to load script, \
+            kwin is probably not running %s", e)
+        sys.exit()
+
+    # windowTracker needs to be properly deleted at exit (unloading kwin script)
+    def exitHandler(sig, frame):
+        if sig == signal.SIGINT or sig == signal.SIGTERM or \
+                sig == signal.SIGQUIT or sig == signal.SIGABRT:
+            global windowTracker
+            del windowTracker
+            mainLoop.quit()
+        else:
+            raise ValueError("Undefined handler for '{}'".format(signal))
+
+    signal.signal(signal.SIGTERM, exitHandler)
+    signal.signal(signal.SIGINT, exitHandler)
+    signal.signal(signal.SIGQUIT, exitHandler)
+    signal.signal(signal.SIGABRT, exitHandler)
+
+    mainLoop = GLib.MainLoop()
+
+    try:
+        mainLoop.run()
     except KeyboardInterrupt:
-        GLib.MainLoop().quit()
+        mainLoop.quit()
+
+
