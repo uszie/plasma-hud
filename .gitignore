@@ -1,2 +1,10 @@
 build/*
 __pycache__
+plasma-hud.cflags
+plasma-hud.cxxflags
+plasma-hud.config
+plasma-hud.includes
+plasma-hud.files
+plasma-hud.creator
+plasma-hud.creator.user
+compile_commands.json
