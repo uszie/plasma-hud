@@ -61,5 +61,6 @@ setup(
     data_files = data_files,
     install_requires = ['setuptools'],
     #scripts = [],
+    packages=[],
     cmdclass = cmdclass,
 )
