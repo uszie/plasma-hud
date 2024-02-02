@@ -48,7 +48,7 @@ function onClientAdded(client) {
     if (isPlasmaHUDClient(client) && lastActivatedClient) {
         var hudGeometry = client.frameGeometry
         var windowGeometry = lastActivatedClient.frameGeometry
-        var titlebarHeight = windowGeometry.height - lastActivatedClient.clientSize.height
+        var titlebarHeight = windowGeometry.height - lastActivatedClient.bufferGeometry.height
         hudGeometry.x = windowGeometry.x
         hudGeometry.y = windowGeometry.y + titlebarHeight
         hudGeometry.width = windowGeometry.width

@@ -1,0 +1,28 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "usarinheininga@hotmail.com",
+                "Name": "Usarin Heininga"
+            }
+        ],
+        "Category": "Windows and Tasks",
+        "Description": "Plasma menubar HUD",
+        "EnabledByDefault": true,
+        "Hidden": true,
+        "Icon": "search",
+        "Id": "com.github.zren.PlasmaHUD",
+        "License": "LGPL 2.1+",
+        "Name": "Plasma HUD",
+        "ServiceTypes": [
+            "Plasma/Applet"
+        ],
+        "Version": "0.1",
+        "Website": "https://github.com/Zren/plasma-hud"
+    },
+    "X-Plasma-API": "declarativeappletscript",
+    "X-Plasma-DBusActivationService": "com.github.zren.PlasmaHUD",
+    "X-Plasma-MainScript": "ui/main.qml",
+    "X-Plasma-NotificationArea": "true",
+    "X-Plasma-NotificationAreaCategory": "SystemServices"
+}
