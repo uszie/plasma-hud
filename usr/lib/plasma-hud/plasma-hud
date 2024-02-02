@@ -456,19 +456,19 @@ def init_rofi():
 
     # Calculate display DPI value
     dpi = kde_force_dpi
-    if not dpi:
-        screen = window.get_screen()
-        scale = window.get_scale_factor()
+    #if not dpi:
+    #    screen = window.get_screen()
+    #    scale = window.get_scale_factor()
 
-        def get_dpi(pixels, mm):
-            if mm >= 1:
-                return scale * pixels / (mm / 25.4)
-            else:
-                return 0
+    #    def get_dpi(pixels, mm):
+    #        if mm >= 1:
+    #            return scale * pixels / (mm / 25.4)
+    #        else:
+    #            return 0
 
-        width_dpi = get_dpi(screen.width(), screen.width_mm())
-        height_dpi = get_dpi(screen.height(), screen.height_mm())
-        dpi = scale * (width_dpi + height_dpi) / 2
+    #    width_dpi = get_dpi(screen.width(), screen.width_mm())
+    #    height_dpi = get_dpi(screen.height(), screen.height_mm())
+    #    dpi = scale * (width_dpi + height_dpi) / 2
 
     logging.debug("init_rofi.rofi_process.pre: %s", rofi_process)
     rofi_process = subprocess.Popen(['rofi', '-dmenu',
