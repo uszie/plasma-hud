@@ -481,7 +481,7 @@ def init_rofi():
         '-async-pre-read', str(num_lines),
         '-sync' if wait_for_sync else '', # withhold display until menu entries are ready
         '-font', font_name,
-        '-dpi', str(dpi),
+        '-dpi' if dpi else '', str(dpi) if dpi else '',
         '-separator-style', 'none',
         '-hide-scrollbar',
         '-click-to-exit',
