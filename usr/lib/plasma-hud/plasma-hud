@@ -25,9 +25,9 @@ from Xlib import display, protocol, X, Xatom, error
 # https://en.wikipedia.org/wiki/Whitespace_character
 NOBREAKSPACE = '\u00A0'
 EMSPACE = '\u2003'
-# PATHARROW = '>'
+PATHARROW = '>'
 # PATHARROW = '▶'
-PATHARROW = '\u00BB'
+# PATHARROW = '\u00BB'
 # PATHSEPERATOR = NOBREAKSPACE + NOBREAKSPACE + PATHARROW + NOBREAKSPACE + NOBREAKSPACE
 PATHSEPERATOR = EMSPACE + PATHARROW + EMSPACE
 
@@ -144,12 +144,13 @@ def format_shortcut(text):
     text = text.replace('Control+', 'Ctrl+')
 
     # Prevent shortcut from showing up in search
-    text = convert_alphanumeric_to_unicode(text)
-    text = text.replace('+', '＋') # Full-width Plus (U+FF0B)
+    # text = convert_alphanumeric_to_unicode(text)
+    # text = text.replace('+', '＋') # Full-width Plus (U+FF0B)
 
     # Add Color.
     # Make sure font is not monospace, which clips the Sans Serif characters.
-    text = '<span fgcolor="' + shortcut_fg_color + '" face="Sans Serif">' + text + '</span>'
+    #text = '<span fgcolor="' + shortcut_fg_color + '" face="Sans Serif">' + text + '</span>'
+    text = '<span fgcolor="' + shortcut_fg_color + '">' + text + '</span>'
     return text
 
 def format_menuitem_label(path, shortcut):
@@ -168,6 +169,10 @@ def format_menuitem(formattedlabel, icon_name):
         # Documented at:
         # https://github.com/davatorium/rofi/issues/840#issuecomment-410683206
         result += ' \x00icon\x1f' + icon_name
+
+    if show_icons:
+        # prepend with an empy space as margin between icon and text
+        result = ' ' + result
 
     # print('\t', result)
     return result
