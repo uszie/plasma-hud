@@ -138,7 +138,7 @@ def format_shortcut(text):
     text = text.replace('bracketright', ']')
     text = text.replace('backslash', '\\')
     text = text.replace('slash', '/')
-    text = text.replace('Return', '⏎')
+    # text = text.replace('Return', '⏎')
 
     # Qt
     text = text.replace('Control+', 'Ctrl+')
