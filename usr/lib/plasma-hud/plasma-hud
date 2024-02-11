@@ -160,6 +160,10 @@ def format_menuitem_label(path, shortcut):
         shortcut = format_shortcut(shortcut)
         result += EMSPACE + shortcut
 
+    if show_icons:
+        # prepend with an empy space as margin between icon and text
+        result = ' ' + result
+
     return result
 
 def format_menuitem(formattedlabel, icon_name):
@@ -169,10 +173,6 @@ def format_menuitem(formattedlabel, icon_name):
         # Documented at:
         # https://github.com/davatorium/rofi/issues/840#issuecomment-410683206
         result += ' \x00icon\x1f' + icon_name
-
-    if show_icons:
-        # prepend with an empy space as margin between icon and text
-        result = ' ' + result
 
     # print('\t', result)
     return result

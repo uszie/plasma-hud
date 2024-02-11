@@ -10,3 +10,5 @@ plasma-hud.files
 plasma-hud.creator
 plasma-hud.creator.user
 compile_commands.json
+.vscode
+.trunk
